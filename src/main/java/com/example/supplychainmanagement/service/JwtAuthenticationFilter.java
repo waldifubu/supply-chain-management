@@ -36,8 +36,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     ) throws ServletException, IOException, ExpiredJwtException {
         final String authHeader = request.getHeader("Authorization");
         final String jwt;
-        String userEmail = null;
+        String userEmail;
+
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            logger.warn("JWT Token does not begin with Bearer String");
             filterChain.doFilter(request, response);
             return;
         }
@@ -60,9 +62,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         null,
                         userDetails.getAuthorities()
                 );
-                authToken.setDetails(
-                        new WebAuthenticationDetailsSource().buildDetails(request)
-                );
+                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
         }

@@ -5,11 +5,13 @@ import com.example.supplychainmanagement.entity.users.User;
 import com.example.supplychainmanagement.model.enums.OrderStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
 
 import java.sql.Date;
 import java.util.List;
 import java.util.Optional;
 
+@Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
     List<Order> findAllByUser(User user);

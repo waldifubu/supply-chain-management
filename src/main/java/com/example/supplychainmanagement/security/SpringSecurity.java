@@ -45,8 +45,7 @@ public class SpringSecurity {
         http.csrf().disable()
                 .authorizeHttpRequests((authorize) ->
                         authorize
-                                .requestMatchers("/register/**", "/error").permitAll()
-                                .requestMatchers("/").permitAll()
+                                .requestMatchers("/", "/register/**", "/error", "/actuator/**").permitAll()
                                 .requestMatchers("/users").authenticated()
                 ).formLogin(
                         form -> form
@@ -83,6 +82,8 @@ public class SpringSecurity {
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling().authenticationEntryPoint(exceptionHandler)
+                .and().sessionManagement()
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
         ;
         return http.build();
     }

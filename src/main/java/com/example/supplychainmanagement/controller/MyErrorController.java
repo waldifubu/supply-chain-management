@@ -10,6 +10,7 @@ import org.springframework.security.authentication.InsufficientAuthenticationExc
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import java.io.IOException;
@@ -17,7 +18,7 @@ import java.io.IOException;
 @Controller
 public class MyErrorController implements ErrorController, AuthenticationEntryPoint {
     // @TODO: Not working
-    @RequestMapping("/error")
+    @GetMapping("/error")
     public String handleError(HttpServletRequest request) {
         HttpStatus status2 = HttpStatus.INTERNAL_SERVER_ERROR; // 500
 

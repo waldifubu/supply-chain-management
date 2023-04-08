@@ -6,9 +6,9 @@ import com.example.supplychainmanagement.entity.Role;
 import com.example.supplychainmanagement.entity.Storage;
 import com.example.supplychainmanagement.entity.users.User;
 import com.example.supplychainmanagement.model.enterprise.RequestPartsOrderResponse;
-import com.example.supplychainmanagement.model.enums.UserRole;
 import com.example.supplychainmanagement.model.enums.RequestStatus;
 import com.example.supplychainmanagement.model.enums.StorageStatus;
+import com.example.supplychainmanagement.model.enums.UserRole;
 import com.example.supplychainmanagement.repository.RequestComponentRepository;
 import com.example.supplychainmanagement.repository.RoleRepository;
 import com.example.supplychainmanagement.repository.StorageRepository;
@@ -48,28 +48,25 @@ public class SupplierController {
     @GetMapping(value = "/requests")
     @Secured({"ROLE_SUPPLIER", "ROLE_ADMIN"})
     public ResponseEntity<?> getAllRequestsByStatus(
-            @RequestParam(value = "status") Optional<String> requiredStatus,
+            @RequestParam(value = "status", defaultValue = "open") String requiredStatus,
             @AuthenticationPrincipal org.springframework.security.core.userdetails.User authUser
     ) {
         RequestStatus requestStatus;
         List<RequestComponent> requestComponentList;
 
-        if (requiredStatus.isPresent()) {
-            String requestStatusString = requiredStatus.get().toUpperCase();
-            requestStatus = RequestStatus.valueOf(requestStatusString);
+        String requestStatusString = requiredStatus.toUpperCase();
+        requestStatus = RequestStatus.valueOf(requestStatusString);
 
-            //admin check order open
-            Optional<User> optionalUser = userRepository.findByEmail(authUser.getUsername());
-            User user = optionalUser.orElseThrow();
-            Optional<Role> optionalRole = roleRepository.findByName(UserRole.ROLE_ADMIN.name());
+        //admin check order open
+        Optional<User> optionalUser = userRepository.findByEmail(authUser.getUsername());
+        User user = optionalUser.orElseThrow();
+        Optional<Role> optionalRole = roleRepository.findByName(UserRole.ROLE_ADMIN.name());
 
-            if (optionalRole.isPresent() && user.getRoles().contains(optionalRole.get()) || requestStatus == RequestStatus.OPEN) {
-                requestComponentList = requestComponentRepository.findAllByRequestStatusOrderByRequestDate(requestStatus);
-            } else
-                requestComponentList = requestComponentRepository.findAllByRequestStatusAndSupplier(requestStatus, user);
-        } else {
-            requestComponentList = requestComponentRepository.findAllByRequestStatusOrderByRequestDate(RequestStatus.OPEN);
-        }
+        if (optionalRole.isPresent() && user.getRoles().contains(optionalRole.get()) || requestStatus == RequestStatus.OPEN) {
+            requestComponentList = requestComponentRepository.findAllByRequestStatusOrderByRequestDate(requestStatus);
+        } else
+            requestComponentList = requestComponentRepository.findAllByRequestStatusAndSupplier(requestStatus, user);
+
 
         List<RequestPartsOrderResponse> responseList = new ArrayList<>();
 
@@ -117,18 +114,15 @@ public class SupplierController {
     ) {
         try {
             RequestComponent requestComponent = processRequest(id, authUser, RequestStatus.IN_TRANSIT);
-
             Product p = requestComponent.getComponent().getProduct();
 
             Optional<Storage> optionalStorage = storageRepository.findByProductAdmin(p);
             Storage storage = optionalStorage.orElseThrow();
 
-            storage.setStorageStatus(StorageStatus.DELIVER);
+            storage.setStorageStatus(StorageStatus.IN_DELIVERY);
             storageRepository.save(storage);
 
             return new ResponseEntity<>(requestComponent, HttpStatus.OK);
-        } catch (AccessDeniedException ace) {
-            return handleWrongDate(ace.getMessage());
         } catch (Exception ex) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
