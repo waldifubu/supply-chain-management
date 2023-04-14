@@ -35,6 +35,8 @@ server.error.whitelabel.enabled=false
 spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.web.servlet.error.ErrorMvcAutoConfiguration
 spring.mvc.throw-exception-if-no-handler-found=true
 spring.web.resources.add-mappings=false
+spring.main.banner-mode=console
+spring.output.ansi.enabled=always
 
 #spring.thymeleaf.cache=false
 #spring.thymeleaf.enabled=true
@@ -45,6 +47,8 @@ spring.application.name=Supply Chain Management
 spring.security.user.name=web
 
 # App Properties
+app.name=${spring.application.name}
+app.description=${app.name} demo project to show SCM processes
 app.jwtSecret=asdfSFS34wfsdfsdfSDSD32dfsddDDerQSNCK34SOWEK5354fdgdf4_supergeheimerkeyderunwahrscheinlichzuknackenistabernichtunmoeglich123unddazunocheinpaartollebuchstabenundrechtschreibFehlerjuchudasgehtab
 app.jwtExpirationMs=1438560000
 #1000*60*24*999
@@ -56,7 +60,7 @@ management.endpoints.jmx.exposure.include=*
 management.endpoint.health.show-details=always
 management.endpoint.shutdown.enabled=true
 
-logging.level.org.hibernate.type.descriptor.sql.BasicBinder=TRACE
-logging.level.org.springframework.web=DEBUG
-logging.level.org.hibernate=ERROR
+logging.level.org.hibernate.type.descriptor.sql.BasicBinder=trace
+logging.level.org.springframework.web=debug
+logging.level.org.hibernate=error
 logging.file.name=application.log
