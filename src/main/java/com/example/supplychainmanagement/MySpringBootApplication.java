@@ -31,7 +31,7 @@ public class MySpringBootApplication implements CommandLineRunner {
     @Override
     public void run(String... args) {
         if (logger.isDebugEnabled()) {
-            logger.info("{}", env.getProperty("app.name"));
+            logger.debug("{}", env.getProperty("app.name"));
         }
 
         logger.info("{} is running...", env.getProperty("app.name"));

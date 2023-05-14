@@ -38,7 +38,12 @@ public class OrderService {
         String orderDate = order.getOrderDate() != null ? order.getOrderDate().toString() : "";
         String dueDate = order.getDueDate() != null ? order.getDueDate().toString() : "";
 
-        CompactOrder compactOrder = new CompactOrder(
+        boolean inTime = false;
+        if (null != order.getDeliveryDate() && null != order.getDueDate()) {
+            inTime = order.getDeliveryDate().isBefore(Instant.ofEpochMilli(order.getDueDate().getTime()).atZone(ZoneId.systemDefault()).toLocalDateTime());
+        }
+
+        return new CompactOrder(
                 order.getId(),
                 order.getOrderNo(),
                 orderDate,
@@ -49,8 +54,7 @@ public class OrderService {
                 order.getUpdated(),
                 order.getUser().getName(),
                 order.getDeliveryDate(),
-                order.getDeliveryDate().isBefore(Instant.ofEpochMilli(order.getDueDate().getTime()).atZone(ZoneId.systemDefault()).toLocalDateTime())
+                inTime
         );
-        return compactOrder;
     }
 }

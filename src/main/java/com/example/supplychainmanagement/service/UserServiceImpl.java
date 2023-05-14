@@ -47,33 +47,32 @@ public class UserServiceImpl implements UserService {
         UserRole userRole = Enum.valueOf(UserRole.class, user.getRoles().get(0).getName());
 
         switch (userRole) {
-            case ROLE_CUSTOMER:
+            case ROLE_CUSTOMER -> {
                 Customer customer = new Customer();
                 BeanUtils.copyProperties(user, customer);
                 userRepository.save(customer);
-                break;
-            case ROLE_ENTERPRISE:
+            }
+            case ROLE_ENTERPRISE -> {
                 Enterprise enterprise = new Enterprise();
                 BeanUtils.copyProperties(user, enterprise);
                 userRepository.save(enterprise);
-                break;
-            case ROLE_SUPPLIER:
+            }
+            case ROLE_SUPPLIER -> {
                 Supplier supplier = new Supplier();
                 BeanUtils.copyProperties(user, supplier);
                 userRepository.save(supplier);
-                break;
-            case ROLE_DISTRIBUTOR:
+            }
+            case ROLE_DISTRIBUTOR -> {
                 Distributor distributor = new Distributor();
                 BeanUtils.copyProperties(user, distributor);
                 userRepository.save(distributor);
-                break;
-            case ROLE_ADMIN:
+            }
+            case ROLE_ADMIN -> {
                 Admin admin = new Admin();
                 BeanUtils.copyProperties(user, admin);
                 userRepository.save(admin);
-                break;
-            default:
-                throw new IllegalStateException("Unexpected value: " + userRole);
+            }
+            default -> throw new IllegalStateException("Unexpected value: " + userRole);
         }
     }
 

@@ -13,6 +13,7 @@ import org.springframework.web.servlet.NoHandlerFoundException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.sql.SQLIntegrityConstraintViolationException;
+import java.util.Arrays;
 
 @RestControllerAdvice
 public class CustomRestControllerAdvice {
@@ -139,13 +140,14 @@ public class CustomRestControllerAdvice {
             Exception e
     ) {
         HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
-        String stackTrace = this.getClass().getSimpleName();
+        String simpleName = this.getClass().getSimpleName();
 
         return new ResponseEntity<>(
                 new ErrorResponse(
                         status,
                         e.getMessage(),
-                        stackTrace
+                        simpleName,
+                        Arrays.stream(e.getStackTrace()).toList()
                 ),
                 status
         );

@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -37,7 +38,7 @@ public class DistributorController {
 
     private final OrderRepository orderRepository;
 
-    @GetMapping("/order")
+    @GetMapping("/orders")
     @Secured({"ROLE_DISTRIBUTOR", "ROLE_ADMIN"})
     public ResponseEntity<?> showConveyableOrders() {
         try {
@@ -77,6 +78,8 @@ public class DistributorController {
                 for (OrdersProducts op : order.getOrdersProducts()) {
                     weight += op.getProduct().getWeight();
                 }
+            } else {
+                handleWrongData("Wrong status of order: " + order.getOrderStatus());
             }
 
             DeliveredResponse response = new DeliveredResponse(order, inTime, weight);
@@ -102,7 +105,7 @@ public class DistributorController {
         boolean inTime = false;
         double weight = 0;
         try {
-            if (order.getOrderStatus() == OrderStatus.IN_TRANSIT) {
+            if (order.getOrderStatus() == OrderStatus.IN_TRANSIT && order.getDistributor() == user) {
                 order.setOrderStatus(OrderStatus.DELIVERED);
                 order.setUpdated(LocalDateTime.now());
                 order.setDistributor(user);
@@ -112,6 +115,14 @@ public class DistributorController {
                 for (OrdersProducts op : order.getOrdersProducts()) {
                     weight += op.getProduct().getWeight();
                 }
+            }
+
+            if (order.getOrderStatus() != OrderStatus.IN_TRANSIT) {
+                return handleWrongData("Wrong status: " + order.getOrderStatus());
+            }
+
+            if (order.getDistributor() != user) {
+                throw new AccessDeniedException("Transport is taken by another account");
             }
 
             DeliveredResponse response = new DeliveredResponse(order, inTime, weight);

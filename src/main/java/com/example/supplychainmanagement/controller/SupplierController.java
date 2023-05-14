@@ -155,7 +155,7 @@ public class SupplierController {
         User user = optionalUser.orElseThrow();
 
         if (requestComponent.getSupplier() != null && !requestComponent.getSupplier().getEmail().equals(user.getEmail()) && requestComponent.getRequestStatus() != RequestStatus.OPEN) {
-            throw new AccessDeniedException("Request is taken by other account");
+            throw new AccessDeniedException("Request is taken by another account");
         }
 
         if (requestStatus.ordinal() < requestComponent.getRequestStatus().ordinal()) {

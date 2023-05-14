@@ -108,10 +108,12 @@ public class EnterpriseController {
             orderList = orderRepository.findOrderByStatus(orderStatus);
         }
 
+        /*
         for (Order o : orderList) {
             Optional<Order> optionalOrder = orderRepository.findOrderByOrderNo(o.getOrderNo());
             Order order = optionalOrder.orElseThrow();
         }
+         */
 
         orderRepository.saveAll(
                 orderList.stream()
@@ -121,8 +123,8 @@ public class EnterpriseController {
         );
 
         try {
-            ListOrders cor = new ListOrders(orderList, orderList.size());
-            return new ResponseEntity<>(cor, HttpStatus.OK);
+            ListOrders listOrders = new ListOrders(orderList, orderList.size());
+            return new ResponseEntity<>(listOrders, HttpStatus.OK);
         } catch (Exception e) {
             System.out.println(e.getMessage());
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -133,7 +135,7 @@ public class EnterpriseController {
     @GetMapping(value = "/order/{id}")
     @Secured({"ROLE_ENTERPRISE", "ROLE_ADMIN"})
     public ResponseEntity<CompactOrder> getOrderDetails(
-        @PathVariable("id") long id) {
+            @PathVariable("id") long id) {
 
         Optional<Order> orderData = orderRepository.findOrderByOrderNo(id);
         Order order = orderData.orElseThrow();
@@ -317,13 +319,17 @@ public class EnterpriseController {
 
         List<Product> productList = new ArrayList<>();
 
-        Product complete;
+        Product completeProduct;
         try {
             for (Product product : possibleProductList) {
-                complete = assemblyComponentToProduct(product, requestComponentList);
+                completeProduct = assemblyComponentToProduct(product, requestComponentList);
 
-                if (complete != null) {
-                    productList.add(complete);
+                if (null != completeProduct) {
+                    productList.add(completeProduct);
+                    Optional<Storage> optionalStorage = storageRepository.findByProduct(completeProduct);
+                    Storage storage = optionalStorage.orElseThrow();
+                    storage.setLastDelivery(new Date(java.lang.System.currentTimeMillis()));
+                    storageRepository.save(storage);
                 }
             }
 
@@ -364,10 +370,10 @@ public class EnterpriseController {
                 requestComponentRepository.save(requestComponent);
             }
 
-            if (requestComponent != null) {
+            if (null != requestComponent) {
                 Optional<Storage> optionalStorage = storageRepository.findByProduct(requestComponent.getComponent().getProduct());
                 Storage storage = optionalStorage.orElseThrow();
-                storage.setLastDelivery(new java.sql.Date(Calendar.getInstance().getTime().getTime()));
+                storage.setLastDelivery(new Date(Calendar.getInstance().getTime().getTime()));
                 storageRepository.save(storage);
 
                 return requestComponent.getComponent().getProduct();
@@ -510,7 +516,7 @@ public class EnterpriseController {
                 order.setUpdated(LocalDateTime.now());
                 orderRepository.save(order);
             } else {
-                return handleWrongDate("This status can't be handled. It's already " + order.getOrderStatus());
+                return handleWrongDate("This status can't be handled anymore. It's already " + order.getOrderStatus());
             }
 
             return new ResponseEntity<>(order, HttpStatus.OK);

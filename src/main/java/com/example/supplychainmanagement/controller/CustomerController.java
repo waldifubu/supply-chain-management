@@ -88,7 +88,7 @@ public class CustomerController {
         }
     }
 
-    @GetMapping("/order")
+    @GetMapping("/orders")
     @Secured({"ROLE_CUSTOMER", "ROLE_ADMIN"})
     public ResponseEntity<?> showAll(@AuthenticationPrincipal org.springframework.security.core.userdetails.User authUser) {
         Optional<User> optionalUser = userRepository.findByEmail(authUser.getUsername());
