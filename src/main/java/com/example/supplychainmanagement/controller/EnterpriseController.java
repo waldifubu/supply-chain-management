@@ -161,12 +161,12 @@ public class EnterpriseController {
 
         Product product = productRepository.getProductByArticleNo(articleNo);
         Optional<Storage> optionalStorage;
-        Storage storage = null;
 
         Optional<User> optionalUser = userRepository.findByEmail(authUser.getUsername());
         User user = optionalUser.orElseThrow();
         Optional<Role> optionalRole = roleRepository.findByName(UserRole.ROLE_ADMIN.name());
 
+        // First check, if we are admin
         if (optionalRole.isPresent() && user.getRoles().contains(optionalRole.get())) {
             optionalStorage = storageRepository.findByProductAdmin(product);
             List<Component> componentList = componentRepository.findAllByProduct(product);
@@ -174,7 +174,7 @@ public class EnterpriseController {
         } else {
             optionalStorage = storageRepository.findByProduct(product);
         }
-        storage = optionalStorage.orElseGet(Storage::new);
+        Storage storage = optionalStorage.orElseGet(Storage::new);
         storage.setProduct(product);
 
         try {
