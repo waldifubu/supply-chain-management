@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonEnumDefaultValue;
 
 public enum ProductStatus {
     @JsonEnumDefaultValue
-    PENDING,
-    IN_STOCK,
-    OUT_OF_STOCK,
-    AVAILABLE
+    PENDING, // Intial status. Request for availability
+    IN_STOCK, // Product is in stock
+    OUT_OF_STOCK, // Product is not in stock
+    AVAILABLE // Only if all needed products are "in stock", they become available
 }

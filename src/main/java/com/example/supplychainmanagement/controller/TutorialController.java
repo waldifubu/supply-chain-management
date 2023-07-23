@@ -3,7 +3,6 @@ package com.example.supplychainmanagement.controller;
 
 import com.example.supplychainmanagement.entity.Tutorial;
 import com.example.supplychainmanagement.repository.TutorialRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,8 +16,11 @@ import java.util.Optional;
 @RequestMapping("/api")
 public class TutorialController {
 
-    @Autowired
-    TutorialRepository tutorialRepository;
+    final TutorialRepository tutorialRepository;
+
+    public TutorialController(TutorialRepository tutorialRepository) {
+        this.tutorialRepository = tutorialRepository;
+    }
 
     @GetMapping("/tutorials")
     public ResponseEntity<List<Tutorial>> getAllTutorials(@RequestParam(required = false) String title) {
@@ -26,9 +28,9 @@ public class TutorialController {
             List<Tutorial> tutorials = new ArrayList<Tutorial>();
 
             if (title == null)
-                tutorialRepository.findAll().forEach(tutorials::add);
+                tutorials.addAll(tutorialRepository.findAll());
             else
-                tutorialRepository.findByTitleContaining(title).forEach(tutorials::add);
+                tutorials.addAll(tutorialRepository.findByTitleContaining(title));
 
             if (tutorials.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
@@ -44,11 +46,7 @@ public class TutorialController {
     public ResponseEntity<Tutorial> getTutorialById(@PathVariable("id") long id) {
         Optional<Tutorial> tutorialData = tutorialRepository.findById(id);
 
-        if (tutorialData.isPresent()) {
-            return new ResponseEntity<>(tutorialData.get(), HttpStatus.OK);
-        } else {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
+        return tutorialData.map(tutorial -> new ResponseEntity<>(tutorial, HttpStatus.OK)).orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
     @PostMapping("/tutorials")

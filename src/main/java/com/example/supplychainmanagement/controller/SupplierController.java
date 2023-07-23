@@ -49,8 +49,8 @@ public class SupplierController {
     @Secured({"ROLE_SUPPLIER", "ROLE_ADMIN"})
     public ResponseEntity<?> getAllRequestsByStatus(
             @RequestParam(value = "status", defaultValue = "open") String requiredStatus,
-            @AuthenticationPrincipal org.springframework.security.core.userdetails.User authUser
-    ) {
+            @AuthenticationPrincipal org.springframework.security.core.userdetails.User authUser) {
+
         RequestStatus requestStatus;
         List<RequestComponent> requestComponentList;
 
@@ -60,13 +60,13 @@ public class SupplierController {
         //admin check order open
         Optional<User> optionalUser = userRepository.findByEmail(authUser.getUsername());
         User user = optionalUser.orElseThrow();
-        Optional<Role> optionalRole = roleRepository.findByName(UserRole.ROLE_ADMIN.name());
+        Optional<Role> optionalRole = roleRepository.findByName(UserRole.ROLE_ADMIN.toString());
 
         if (optionalRole.isPresent() && user.getRoles().contains(optionalRole.get()) || requestStatus == RequestStatus.OPEN) {
             requestComponentList = requestComponentRepository.findAllByRequestStatusOrderByRequestDate(requestStatus);
-        } else
+        } else {
             requestComponentList = requestComponentRepository.findAllByRequestStatusAndSupplier(requestStatus, user);
-
+        }
 
         List<RequestPartsOrderResponse> responseList = new ArrayList<>();
 
@@ -91,10 +91,8 @@ public class SupplierController {
 
     @PatchMapping(value = "/approve/{id}")
     @Secured({"ROLE_SUPPLIER", "ROLE_ADMIN"})
-    public ResponseEntity<?> approveRequest(
-            @PathVariable("id") final UUID id,
-            @AuthenticationPrincipal org.springframework.security.core.userdetails.User authUser
-    ) {
+    public ResponseEntity<?> approveRequest(@PathVariable("id") final UUID id,
+                                            @AuthenticationPrincipal org.springframework.security.core.userdetails.User authUser) {
         try {
             RequestComponent requestComponent = processRequest(id, authUser, RequestStatus.APPROVED);
 
@@ -108,10 +106,8 @@ public class SupplierController {
 
     @PatchMapping(value = "/send/{id}")
     @Secured({"ROLE_SUPPLIER", "ROLE_ADMIN"})
-    public ResponseEntity<?> transitRequest(
-            @PathVariable("id") final UUID id,
-            @AuthenticationPrincipal org.springframework.security.core.userdetails.User authUser
-    ) {
+    public ResponseEntity<?> transitRequest(@PathVariable("id") final UUID id,
+                                            @AuthenticationPrincipal org.springframework.security.core.userdetails.User authUser) {
         try {
             RequestComponent requestComponent = processRequest(id, authUser, RequestStatus.IN_TRANSIT);
             Product p = requestComponent.getComponent().getProduct();
@@ -130,10 +126,8 @@ public class SupplierController {
 
     @PatchMapping(value = "/delivered/{id}")
     @Secured({"ROLE_SUPPLIER", "ROLE_ADMIN"})
-    public ResponseEntity<?> deliverRequest(
-            @PathVariable("id") final UUID id,
-            @AuthenticationPrincipal org.springframework.security.core.userdetails.User authUser
-    ) {
+    public ResponseEntity<?> deliverRequest(@PathVariable("id") final UUID id,
+                                            @AuthenticationPrincipal org.springframework.security.core.userdetails.User authUser) {
         try {
             RequestComponent requestComponent = processRequest(id, authUser, RequestStatus.DELIVERED);
 

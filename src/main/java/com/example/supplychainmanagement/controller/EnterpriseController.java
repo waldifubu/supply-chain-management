@@ -117,8 +117,8 @@ public class EnterpriseController {
 
         orderRepository.saveAll(
                 orderList.stream()
-                        .filter(order -> order.getOrderStatus() == OrderStatus.CREATED)
-                        .peek(o -> o.setOrderStatus(OrderStatus.OPEN))
+                        .filter(order -> order.getStatus() == OrderStatus.CREATED)
+                        .peek(o -> o.setStatus(OrderStatus.OPEN))
                         .toList()
         );
 
@@ -140,8 +140,8 @@ public class EnterpriseController {
         Optional<Order> orderData = orderRepository.findOrderByOrderNo(id);
         Order order = orderData.orElseThrow();
 
-        if (order.getOrderStatus() == OrderStatus.CREATED) {
-            order.setOrderStatus(OrderStatus.OPEN);
+        if (order.getStatus() == OrderStatus.CREATED) {
+            order.setStatus(OrderStatus.OPEN);
             orderRepository.save(order);
         }
 
@@ -164,7 +164,7 @@ public class EnterpriseController {
 
         Optional<User> optionalUser = userRepository.findByEmail(authUser.getUsername());
         User user = optionalUser.orElseThrow();
-        Optional<Role> optionalRole = roleRepository.findByName(UserRole.ROLE_ADMIN.name());
+        Optional<Role> optionalRole = roleRepository.findByName(UserRole.ROLE_ADMIN.toString());
 
         // First check, if we are admin
         if (optionalRole.isPresent() && user.getRoles().contains(optionalRole.get())) {
@@ -202,15 +202,15 @@ public class EnterpriseController {
 
             //Calculate which products are needed
             if (storage.getInStock() >= op.getQty()) {
-                op.setProductStatus(ProductStatus.IN_STOCK);
+                op.setStatus(ProductStatus.IN_STOCK);
             } else {
-                op.setProductStatus(ProductStatus.OUT_OF_STOCK);
+                op.setStatus(ProductStatus.OUT_OF_STOCK);
                 missingList.add(p);
             }
 
             ordersProductsRepository.save(op);
-            if (order.getOrderStatus() == OrderStatus.OPEN) {
-                order.setOrderStatus(OrderStatus.REVIEW);
+            if (order.getStatus() == OrderStatus.OPEN) {
+                order.setStatus(OrderStatus.REVIEW);
                 orderRepository.save(order);
             }
         }
@@ -346,9 +346,9 @@ public class EnterpriseController {
         product.setComponentList(componentRepository.findAllByProduct(product));
         int listSize = product.getComponentList().size();
 
-        for (Component m : product.getComponentList()) {
+        for (Component component : product.getComponentList()) {
             for (RequestComponent requestComponent : requestComponentList) {
-                if (Objects.equals(m.getId(), requestComponent.getComponent().getId())) {
+                if (Objects.equals(component.getId(), requestComponent.getComponent().getId())) {
                     requestComponentMap.put(requestComponent.getId(), requestComponent);
                 }
             }
@@ -397,8 +397,8 @@ public class EnterpriseController {
             List<RequestComponent> requestComponentList = new ArrayList<>();
 
             for (OrdersProducts op : opList) {
-                OrdersProducts ordersProducts = ordersProductsRepository.getById(op.getId());
-                ordersProducts.setProductStatus(ProductStatus.PENDING);
+                OrdersProducts ordersProducts = ordersProductsRepository.getReferenceById(op.getId());
+                ordersProducts.setStatus(ProductStatus.PENDING);
                 ordersProductsRepository.save(ordersProducts);
 
                 Product p = op.getProduct();
@@ -428,8 +428,8 @@ public class EnterpriseController {
             Optional<Order> orderData = orderRepository.findOrderByOrderNo(id);
             Order order = orderData.orElseThrow();
 
-            if (order.getOrderStatus().ordinal() > 2) {
-                return handleWrongDate("Order is in wrong status: " + order.getOrderStatus());
+            if (order.getStatus().ordinal() > 2) {
+                return handleWrongDate("Order is in wrong status: " + order.getStatus());
             }
 
             List<OrdersProducts> opList = order.getOrdersProducts();
@@ -447,7 +447,7 @@ public class EnterpriseController {
                 if (storage.getInStock() >= amount) {
                     op.getProduct().setProductStatus(ProductStatus.IN_STOCK);
                     op.getProduct().setInStock(op.getQty());
-                    op.setProductStatus(ProductStatus.IN_STOCK);
+                    op.setStatus(ProductStatus.IN_STOCK);
                     updatedList.add(op);
                     commissionList.add(op);
                 } else {
@@ -458,13 +458,13 @@ public class EnterpriseController {
             if (allInStock) {
                 ordersProductsRepository.saveAll(
                         commissionList.stream()
-                                .filter(ordersProducts -> ordersProducts.getProductStatus() == ProductStatus.IN_STOCK)
-                                .peek(o -> o.setProductStatus(ProductStatus.AVAILABLE))
+                                .filter(ordersProducts -> ordersProducts.getStatus() == ProductStatus.IN_STOCK)
+                                .peek(o -> o.setStatus(ProductStatus.AVAILABLE))
                                 .toList()
                 );
 
                 order.setOrdersProducts(commissionList);
-                order.setOrderStatus(OrderStatus.APPROVED);
+                order.setStatus(OrderStatus.APPROVED);
             } else {
                 order.setOrdersProducts(updatedList);
             }
@@ -488,8 +488,8 @@ public class EnterpriseController {
             Optional<Order> orderData = orderRepository.findOrderByOrderNo(id);
             Order order = orderData.orElseThrow();
 
-            if (order.getOrderStatus() == OrderStatus.REVIEW) {
-                order.setOrderStatus(OrderStatus.REJECTED);
+            if (order.getStatus() == OrderStatus.REVIEW) {
+                order.setStatus(OrderStatus.REJECTED);
                 order.setUpdated(LocalDateTime.now());
                 orderRepository.save(order);
             } else {
@@ -511,12 +511,12 @@ public class EnterpriseController {
             Optional<Order> orderData = orderRepository.findOrderByOrderNo(id);
             Order order = orderData.orElseThrow();
 
-            if (order.getOrderStatus() == OrderStatus.APPROVED) {
-                order.setOrderStatus(OrderStatus.IN_COMMISSION);
+            if (order.getStatus() == OrderStatus.APPROVED) {
+                order.setStatus(OrderStatus.IN_COMMISSION);
                 order.setUpdated(LocalDateTime.now());
                 orderRepository.save(order);
             } else {
-                return handleWrongDate("This status can't be handled anymore. It's already " + order.getOrderStatus());
+                return handleWrongDate("This status can't be handled anymore. It's already " + order.getStatus());
             }
 
             return new ResponseEntity<>(order, HttpStatus.OK);
@@ -534,8 +534,8 @@ public class EnterpriseController {
             Optional<Order> orderData = orderRepository.findOrderByOrderNo(id);
             Order order = orderData.orElseThrow();
 
-            if (order.getOrderStatus() == OrderStatus.IN_COMMISSION) {
-                order.setOrderStatus(OrderStatus.CONVEYABLE);
+            if (order.getStatus() == OrderStatus.IN_COMMISSION) {
+                order.setStatus(OrderStatus.CONVEYABLE);
                 order.setUpdated(LocalDateTime.now());
                 orderRepository.save(order);
             } else {

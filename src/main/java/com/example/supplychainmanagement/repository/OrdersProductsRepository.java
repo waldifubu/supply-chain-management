@@ -14,6 +14,7 @@ public interface OrdersProductsRepository extends JpaRepository<OrdersProducts, 
     @Query("select o from OrdersProducts o where o.order = ?1")
     List<OrdersProducts> findOrdersProductsByOrderNo(Order o);
 
-    OrdersProducts getById(Long id);
+//    @Query("select o from Order o where o.id = ?1")
+//    OrdersProducts getById(Long id);
 }
 

@@ -17,13 +17,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.sql.Date;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
@@ -60,6 +60,7 @@ public class CustomerController {
             if (request.getDueDate() == null) {
                 return new ResponseEntity<>(null, HttpStatus.UNPROCESSABLE_ENTITY);
             }
+
             try {
                 Date.valueOf(request.getDueDate());
             } catch (IllegalArgumentException iae) {
@@ -80,7 +81,7 @@ public class CustomerController {
                 ordersProductsRepository.save(ordersProducts);
             }
 
-            CreateOrderResponse cor = new CreateOrderResponse(order.getOrderNo(), order.getOrderStatus(), order.getOrderDate());
+            CreateOrderResponse cor = new CreateOrderResponse(order.getOrderNo(), order.getStatus(), order.getOrderDate());
             return new ResponseEntity<>(cor, HttpStatus.CREATED);
         } catch (Exception e) {
             System.out.println(e.getMessage());
@@ -88,6 +89,7 @@ public class CustomerController {
         }
     }
 
+    //@TODO: Try avoid product info, just brief data
     @GetMapping("/orders")
     @Secured({"ROLE_CUSTOMER", "ROLE_ADMIN"})
     public ResponseEntity<?> showAll(@AuthenticationPrincipal org.springframework.security.core.userdetails.User authUser) {
@@ -96,7 +98,15 @@ public class CustomerController {
 
         try {
             List<Order> orderList = orderRepository.findAllByUser(user);
-            ListOrders cor = new ListOrders(orderList, orderList.size());
+            List<Order> newList = new ArrayList<>();
+
+            for (Iterator<Order> it = orderList.iterator(); it.hasNext(); ) {
+                Order o = it.next();
+                o.setCountProducts(o.getOrdersProducts().size());
+                o.setOrdersProducts(null);
+                newList.add(o);
+            }
+            ListOrders cor = new ListOrders(newList, orderList.size());
             return new ResponseEntity<>(cor, HttpStatus.OK);
         } catch (Exception e) {
             System.out.println(e.getMessage());
@@ -140,21 +150,23 @@ public class CustomerController {
         Optional<User> optionalUser = userRepository.findByEmail(authUser.getUsername());
         User user = optionalUser.orElseThrow();
         Optional<Order> orderData;
-        Optional<Role> adminRole = roleRepository.findByName(UserRole.ROLE_ADMIN.name());
-        Optional<Role> enterpriseRole = roleRepository.findByName(UserRole.ROLE_ENTERPRISE.name());
+        Optional<Role> optionalAdminRole = roleRepository.findByName(UserRole.ROLE_ADMIN.toString());
+        Optional<Role> optionalEnterpriseRole = roleRepository.findByName(UserRole.ROLE_ENTERPRISE.toString());
+
+        boolean allowedRole = UserRole.contains(optionalAdminRole.map(Role::toString).orElse(null)) ||
+                UserRole.contains(optionalEnterpriseRole.map(Role::toString).orElse(null));
 
         try {
-            if (enterpriseRole.isPresent() && adminRole.isPresent() && (user.getRoles().contains(adminRole.get()) ||
-                    user.getRoles().contains(enterpriseRole.get()))) {
+            if (allowedRole) {
                 orderData = orderRepository.findOrderByOrderNo(id);
             } else {
                 orderData = orderRepository.findOrderByOrderNoAndUser(id, user);
             }
 
             Order order = orderData.orElseThrow();
-            if (order.getOrderStatus() == OrderStatus.DELIVERED) {
+            if (order.getStatus() == OrderStatus.DELIVERED || order.getStatus() == OrderStatus.REJECTED) {
                 order.setUpdated(LocalDateTime.now());
-                order.setOrderStatus(OrderStatus.CLOSED);
+                order.setStatus(OrderStatus.CLOSED);
                 orderRepository.save(order);
             } else {
                 return new ResponseEntity<>("Order was not found", HttpStatus.NOT_FOUND);

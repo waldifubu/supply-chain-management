@@ -1,7 +1,7 @@
 package com.example.supplychainmanagement.service;
 
 import com.example.supplychainmanagement.dto.UserDto;
-import com.example.supplychainmanagement.entity.*;
+import com.example.supplychainmanagement.entity.Role;
 import com.example.supplychainmanagement.entity.users.*;
 import com.example.supplychainmanagement.model.enums.UserRole;
 import com.example.supplychainmanagement.repository.RoleRepository;
@@ -110,17 +110,5 @@ public class UserServiceImpl implements UserService {
         Role role = new Role("ROLE_ADMIN");
         role.setName("ROLE_ADMIN");
         return roleRepository.save(role);
-    }
-
-
-    private String determineUserType(String role) {
-        return switch (role) {
-            case "ROLE_CUSTOMER" -> "customer";
-            case "ROLE_ENTERPRISE" -> "enterprise";
-            case "ROLE_SUPPLIER" -> "supplier";
-            case "ROLE_DISTRIBUTOR" -> "distributor";
-            case "ROLE_ADMIN" -> "admin";
-            default -> null;
-        };
     }
 }

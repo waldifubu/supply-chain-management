@@ -31,7 +31,7 @@ public class OrderService {
         for (OrdersProducts op : opList) {
             Product p = op.getProduct();
             p.setQty(op.getQty());
-            p.setProductStatus(op.getProductStatus());
+            p.setProductStatus(op.getStatus());
             productList.add(p);
         }
 
@@ -47,7 +47,7 @@ public class OrderService {
                 order.getId(),
                 order.getOrderNo(),
                 orderDate,
-                order.getOrderStatus(),
+                order.getStatus(),
                 dueDate,
                 productList,
                 productList.size(),

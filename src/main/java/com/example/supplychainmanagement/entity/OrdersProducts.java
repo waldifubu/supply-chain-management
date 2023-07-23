@@ -36,5 +36,5 @@ public class OrdersProducts {
 
     @Column(name = "product_status", nullable = true)
     @Enumerated(EnumType.STRING)
-    protected ProductStatus productStatus = ProductStatus.PENDING;
+    protected ProductStatus status = ProductStatus.PENDING;
 }

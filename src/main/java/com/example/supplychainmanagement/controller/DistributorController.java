@@ -2,12 +2,15 @@ package com.example.supplychainmanagement.controller;
 
 import com.example.supplychainmanagement.entity.Order;
 import com.example.supplychainmanagement.entity.OrdersProducts;
+import com.example.supplychainmanagement.entity.Role;
 import com.example.supplychainmanagement.entity.users.User;
 import com.example.supplychainmanagement.model.customer.ListOrders;
 import com.example.supplychainmanagement.model.distributor.DeliveredResponse;
 import com.example.supplychainmanagement.model.distributor.TransitRequest;
 import com.example.supplychainmanagement.model.enums.OrderStatus;
+import com.example.supplychainmanagement.model.enums.UserRole;
 import com.example.supplychainmanagement.repository.OrderRepository;
+import com.example.supplychainmanagement.repository.RoleRepository;
 import com.example.supplychainmanagement.repository.UserRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -38,6 +41,8 @@ public class DistributorController {
 
     private final OrderRepository orderRepository;
 
+    private final RoleRepository roleRepository;
+
     @GetMapping("/orders")
     @Secured({"ROLE_DISTRIBUTOR", "ROLE_ADMIN"})
     public ResponseEntity<?> showConveyableOrders() {
@@ -51,7 +56,7 @@ public class DistributorController {
     }
 
     @PatchMapping("/send/{id}")
-    @Secured({"ROLE_DISTRIBUTOR", "ROLE_ADMIN"})
+    @Secured({"ROLE_DISTRIBUTOR"})
     public ResponseEntity<?> transitOrder(
             @PathVariable Long id,
             @RequestBody TransitRequest transitRequest,
@@ -66,11 +71,11 @@ public class DistributorController {
         double weight = 0;
 
         try {
-            if (order.getOrderStatus() == OrderStatus.CONVEYABLE) {
+            if (order.getStatus() == OrderStatus.CONVEYABLE) {
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
                 LocalDateTime dateTime = LocalDateTime.parse(transitRequest.getDeliveryDateString(), formatter);
                 order.setDeliveryDate(dateTime);
-                order.setOrderStatus(OrderStatus.IN_TRANSIT);
+                order.setStatus(OrderStatus.IN_TRANSIT);
                 order.setUpdated(LocalDateTime.now());
                 order.setDistributor(user);
                 orderRepository.save(order);
@@ -79,7 +84,7 @@ public class DistributorController {
                     weight += op.getProduct().getWeight();
                 }
             } else {
-                handleWrongData("Wrong status of order: " + order.getOrderStatus());
+                handleWrongData("Wrong status of order: " + order.getStatus());
             }
 
             DeliveredResponse response = new DeliveredResponse(order, inTime, weight);
@@ -105,10 +110,9 @@ public class DistributorController {
         boolean inTime = false;
         double weight = 0;
         try {
-            if (order.getOrderStatus() == OrderStatus.IN_TRANSIT && order.getDistributor() == user) {
-                order.setOrderStatus(OrderStatus.DELIVERED);
+            if (order.getStatus() == OrderStatus.IN_TRANSIT && (order.getDistributor() == user || isAdmin(user))) {
+                order.setStatus(OrderStatus.DELIVERED);
                 order.setUpdated(LocalDateTime.now());
-                order.setDistributor(user);
                 orderRepository.save(order);
                 inTime = order.getDeliveryDate().isBefore(Instant.ofEpochMilli(order.getDueDate().getTime()).atZone(ZoneId.systemDefault()).toLocalDateTime());
 
@@ -117,8 +121,8 @@ public class DistributorController {
                 }
             }
 
-            if (order.getOrderStatus() != OrderStatus.IN_TRANSIT) {
-                return handleWrongData("Wrong status: " + order.getOrderStatus());
+            if (order.getStatus() != OrderStatus.IN_TRANSIT) {
+                return handleWrongData("Wrong status: " + order.getStatus());
             }
 
             if (order.getDistributor() != user) {
@@ -140,5 +144,12 @@ public class DistributorController {
         objectNode.put("error", HttpStatus.BAD_REQUEST.value());
         objectNode.put("message", message);
         return ResponseEntity.badRequest().body(objectNode);
+    }
+
+    private boolean isAdmin(User user) {
+        Optional<Role> optionalRole = roleRepository.findByName(UserRole.ROLE_ADMIN.toString());
+
+        // First check, if we are admin
+        return optionalRole.isPresent() && user.getRoles().contains(optionalRole.get());
     }
 }

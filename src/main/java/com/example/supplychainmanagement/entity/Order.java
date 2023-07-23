@@ -46,7 +46,8 @@ public class Order {
     private Date dueDate;
 
     @Enumerated(EnumType.STRING)
-    private OrderStatus orderStatus = OrderStatus.CREATED;
+    @Column(name = "order_status")
+    private OrderStatus status = OrderStatus.CREATED;
 
     @ManyToOne
     @JsonIgnore
@@ -67,11 +68,22 @@ public class Order {
     @JoinColumn(name = "distributor_id")
     private User distributor;
 
-    public Order(Long id, long orderNo, LocalDateTime orderDate, OrderStatus orderStatus, Date dueDate, LocalDateTime updated, LocalDateTime deliveryDate) {
+    public int getCountProducts() {
+        return countProducts;
+    }
+
+    public void setCountProducts(int countProducts) {
+        this.countProducts = countProducts;
+    }
+
+    @Transient
+    private int countProducts;
+
+    public Order(Long id, long orderNo, LocalDateTime orderDate, OrderStatus status, Date dueDate, LocalDateTime updated, LocalDateTime deliveryDate) {
         this.id = id;
         this.orderNo = orderNo;
         this.orderDate = orderDate;
-        this.orderStatus = orderStatus;
+        this.status = status;
         this.dueDate = dueDate;
         this.updated = updated;
         this.deliveryDate = deliveryDate;
