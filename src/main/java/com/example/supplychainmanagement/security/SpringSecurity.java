@@ -11,6 +11,7 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -42,48 +43,53 @@ public class SpringSecurity {
     @Bean
     @Order(2)
     public SecurityFilterChain filterChainMvc(HttpSecurity http) throws Exception {
-        http.csrf().disable()
-                .authorizeHttpRequests((authorize) ->
+        http
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(authorize ->
                         authorize
-                                .requestMatchers("/", "/register/**", "/error", "/actuator/**", "/api-docs/", "/swagger-ui-custom.html").permitAll()
+                                .requestMatchers("/", "/register/**", "/error", "/actuator/**", "/api-docs/**", "/swagger-ui-custom.html").permitAll()
                                 .requestMatchers("/users").authenticated()
-                ).formLogin(
+                )
+                .formLogin(
                         form -> form
                                 .loginPage("/login")
                                 .loginProcessingUrl("/login")
                                 .defaultSuccessUrl("/users")
                                 .permitAll()
-                ).logout(
+                )
+                .logout(
                         logout -> logout
                                 .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
                                 .permitAll()
                 );
         return http.build();
+
     }
 
     @Bean
     @Order(1)
     public SecurityFilterChain securityFilterChainApi(HttpSecurity http) throws Exception {
         http
-                .csrf()
-                .disable()
+                .csrf(AbstractHttpConfigurer::disable)
                 .securityMatcher("/api/**")
-                .authorizeHttpRequests()
-                .requestMatchers("/api/auth/**")
-                .permitAll()
-                .anyRequest()
-                .authenticated()
-                .and()
-                .sessionManagement()
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                .and()
-                .exceptionHandling().accessDeniedHandler(accessDeniedHandler())
-                .and()
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/api/auth/**")
+                        .permitAll()
+                        .anyRequest()
+                        .authenticated()
+                )
+                .exceptionHandling((exceptionHanding) -> exceptionHanding
+                        .accessDeniedHandler(accessDeniedHandler())
+                )
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                .exceptionHandling().authenticationEntryPoint(exceptionHandler)
-                .and().sessionManagement()
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+                .exceptionHandling((exceptionHandling) -> exceptionHandling
+                        .authenticationEntryPoint(exceptionHandler)
+                )
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+
         ;
         return http.build();
     }

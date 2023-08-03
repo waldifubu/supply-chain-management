@@ -79,7 +79,10 @@ public class Order {
     @Transient
     private int countProducts;
 
-    public Order(Long id, long orderNo, LocalDateTime orderDate, OrderStatus status, Date dueDate, LocalDateTime updated, LocalDateTime deliveryDate) {
+    public Order(Long id, long orderNo,
+                 LocalDateTime orderDate, OrderStatus status, Date dueDate, LocalDateTime updated,
+                 LocalDateTime deliveryDate,
+                 List<OrdersProducts> ordersProducts) {
         this.id = id;
         this.orderNo = orderNo;
         this.orderDate = orderDate;
@@ -87,6 +90,7 @@ public class Order {
         this.dueDate = dueDate;
         this.updated = updated;
         this.deliveryDate = deliveryDate;
+        this.ordersProducts = ordersProducts;
     }
 
     public Order(long orderNo) {

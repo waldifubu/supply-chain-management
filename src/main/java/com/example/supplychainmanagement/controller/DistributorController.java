@@ -28,6 +28,8 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
@@ -46,9 +48,32 @@ public class DistributorController {
     @GetMapping("/orders")
     @Secured({"ROLE_DISTRIBUTOR", "ROLE_ADMIN"})
     public ResponseEntity<?> showConveyableOrders() {
+        double weight;
+        boolean inTime;
+
         try {
-            List<Order> orderList = orderRepository.findAllByOrderStatus(OrderStatus.CONVEYABLE);
-            ListOrders cor = new ListOrders(orderList, orderList.size());
+            List<Order> orderList = orderRepository.findOrderByStatus(OrderStatus.CONVEYABLE);
+            List<DeliveredResponse> newList = new ArrayList<>();
+
+            for (Iterator<Order> it = orderList.iterator(); it.hasNext(); ) {
+                weight = 0;
+                inTime = false;
+                Order o = it.next();
+                o.setCountProducts(o.getOrdersProducts().size());
+                for (OrdersProducts op : o.getOrdersProducts()) {
+                    weight += op.getProduct().getWeight();
+                }
+
+                o.setOrdersProducts(null);
+                if (null != o.getDeliveryDate()) {
+                    inTime = LocalDateTime.now().isBefore(o.getDeliveryDate());
+                }
+                DeliveredResponse deliveredResponse = new DeliveredResponse(o, inTime, weight);
+                newList.add(deliveredResponse);
+            }
+
+            ListOrders cor = new ListOrders(newList, orderList.size());
+
             return new ResponseEntity<>(cor, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -67,7 +92,7 @@ public class DistributorController {
 
         Optional<Order> optionalOrder = orderRepository.getOrderByOrderNo(id);
         Order order = optionalOrder.orElseThrow();
-        boolean inTime = false;
+        boolean inTime = true;
         double weight = 0;
 
         try {
@@ -126,7 +151,7 @@ public class DistributorController {
             }
 
             if (order.getDistributor() != user) {
-                throw new AccessDeniedException("Transport is taken by another account");
+                throw new AccessDeniedException("Transport is already taken by another account");
             }
 
             DeliveredResponse response = new DeliveredResponse(order, inTime, weight);

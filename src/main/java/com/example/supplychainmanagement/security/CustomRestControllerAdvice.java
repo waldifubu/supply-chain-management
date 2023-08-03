@@ -6,6 +6,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.servlet.NoHandlerFoundException;
@@ -38,11 +39,12 @@ public class CustomRestControllerAdvice {
             ExpiredJwtException e
     ) {
         HttpStatus status = HttpStatus.FORBIDDEN;
+        String message = "Token expired. Please login before.";
 
         return new ResponseEntity<>(
                 new ErrorResponse(
                         status,
-                        e.getMessage(),
+                        message,
                         this.getClass().getSimpleName()
                 ),
                 status
@@ -53,8 +55,6 @@ public class CustomRestControllerAdvice {
     // fallback method
     @ExceptionHandler(WeakKeyException.class) // exception handled
     public ResponseEntity<ErrorResponse> handleExceptions(Exception e) {
-        // ... potential custom logic
-
         HttpStatus status = HttpStatus.FORBIDDEN; // 500
 
         // converting the stack trace to String
@@ -62,7 +62,6 @@ public class CustomRestControllerAdvice {
         PrintWriter printWriter = new PrintWriter(stringWriter);
         e.printStackTrace(printWriter);
         String stackTrace = "Key zu schwach"; //stringWriter.toString();
-
 
         return new ResponseEntity<>(
                 new ErrorResponse(
@@ -83,7 +82,7 @@ public class CustomRestControllerAdvice {
         StringWriter stringWriter = new StringWriter();
         PrintWriter printWriter = new PrintWriter(stringWriter);
         e.printStackTrace(printWriter);
-        String stackTrace = "Route not found "+e.getClass().getSimpleName(); //stringWriter.toString();
+        String stackTrace = "Route not found " + e.getClass().getSimpleName(); //stringWriter.toString();
 
         return new ResponseEntity<>(
                 new ErrorResponse(
@@ -96,7 +95,6 @@ public class CustomRestControllerAdvice {
     }
 
 
-
     @ExceptionHandler({DataIntegrityViolationException.class, SQLIntegrityConstraintViolationException.class})
     public ResponseEntity<ErrorResponse> integration(Exception e) {
         HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
@@ -105,7 +103,7 @@ public class CustomRestControllerAdvice {
         StringWriter stringWriter = new StringWriter();
         PrintWriter printWriter = new PrintWriter(stringWriter);
         e.printStackTrace(printWriter);
-        String stackTrace = "SQL Problem :"+e.getClass().getSimpleName(); //stringWriter.toString();
+        String stackTrace = "SQL Problem :" + e.getClass().getSimpleName(); //stringWriter.toString();
 
         return new ResponseEntity<>(
                 new ErrorResponse(
@@ -122,7 +120,7 @@ public class CustomRestControllerAdvice {
     public ResponseEntity<ErrorResponse> enums(Exception e) {
         HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
 
-        String stackTrace = "Unknown value. Given value has no matching mapping: "+e.getClass().getSimpleName(); //stringWriter.toString();
+        String stackTrace = "Unknown value. Given value has no matching mapping: " + e.getClass().getSimpleName(); //stringWriter.toString();
         return new ResponseEntity<>(
                 new ErrorResponse(
                         status,
@@ -155,7 +153,7 @@ public class CustomRestControllerAdvice {
 
 
     @ExceptionHandler(HttpClientErrorException.BadRequest.class) // exception handled
-    public ResponseEntity<ErrorResponse> BadRequestException (
+    public ResponseEntity<ErrorResponse> BadRequestException(
             Exception e
     ) {
         HttpStatus status = HttpStatus.BAD_REQUEST;
@@ -172,7 +170,7 @@ public class CustomRestControllerAdvice {
     }
 
     @ExceptionHandler(HttpClientErrorException.MethodNotAllowed.class) // exception handled
-    public ResponseEntity<ErrorResponse> MethodNotAllowed (
+    public ResponseEntity<ErrorResponse> MethodNotAllowed(
             Exception e
     ) {
         HttpStatus status = HttpStatus.METHOD_NOT_ALLOWED;

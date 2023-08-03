@@ -10,7 +10,7 @@ import java.util.List;
 @AllArgsConstructor
 public class ListOrders {
 
-    List<Order> orders;
+    List<?> orders;
 
     int amount;
 }

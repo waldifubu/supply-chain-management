@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
@@ -62,7 +63,7 @@ public class EnterpriseController {
         return ResponseEntity.badRequest().body(objectNode);
     }
 
-    private ResponseEntity<JsonNode> handleWrongDate(String message) {
+    private ResponseEntity<JsonNode> handleWrongData(String message) {
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode objectNode = mapper.createObjectNode();
         objectNode.put("error", HttpStatus.BAD_REQUEST.value());
@@ -102,7 +103,7 @@ public class EnterpriseController {
                 selectedDate = Date.valueOf(optionalDate.get());
                 orderList = orderRepository.findOrderByStatusAndOrderDate(orderStatus, selectedDate);
             } catch (IllegalArgumentException iae) {
-                return handleWrongDate("Date is wrong: " + optionalDate.get());
+                return handleWrongData("Date is wrong: " + optionalDate.get());
             }
         } else {
             orderList = orderRepository.findOrderByStatus(orderStatus);
@@ -156,10 +157,15 @@ public class EnterpriseController {
 
     @GetMapping("/storage/{id}")
     @Secured({"ROLE_ENTERPRISE", "ROLE_ADMIN"})
-    public ResponseEntity<?> getStorageDetails(@PathVariable("id") long articleNo,
-                                               @AuthenticationPrincipal org.springframework.security.core.userdetails.User authUser) {
+    public ResponseEntity<?> getStorageDetails(
+            @PathVariable("id") long articleNo,
+            @AuthenticationPrincipal org.springframework.security.core.userdetails.User authUser) {
 
         Product product = productRepository.getProductByArticleNo(articleNo);
+        if (null == product) {
+            return handleWrongData("Product not found");
+        }
+
         Optional<Storage> optionalStorage;
 
         Optional<User> optionalUser = userRepository.findByEmail(authUser.getUsername());
@@ -429,7 +435,7 @@ public class EnterpriseController {
             Order order = orderData.orElseThrow();
 
             if (order.getStatus().ordinal() > 2) {
-                return handleWrongDate("Order is in wrong status: " + order.getStatus());
+                return handleWrongData("Order is in wrong status. Current Status: " + StringUtils.capitalize(order.getStatus().toString().toLowerCase()));
             }
 
             List<OrdersProducts> opList = order.getOrdersProducts();
@@ -493,7 +499,7 @@ public class EnterpriseController {
                 order.setUpdated(LocalDateTime.now());
                 orderRepository.save(order);
             } else {
-                return handleWrongDate("Reject order " + id + " is not possible anymore");
+                return handleWrongData("Reject order " + id + " is not possible anymore");
             }
 
             return new ResponseEntity<>(order, HttpStatus.OK);
@@ -516,7 +522,7 @@ public class EnterpriseController {
                 order.setUpdated(LocalDateTime.now());
                 orderRepository.save(order);
             } else {
-                return handleWrongDate("This status can't be handled anymore. It's already " + order.getStatus());
+                return handleWrongData("This status can't be handled anymore. It's already " + order.getStatus());
             }
 
             return new ResponseEntity<>(order, HttpStatus.OK);
@@ -539,7 +545,7 @@ public class EnterpriseController {
                 order.setUpdated(LocalDateTime.now());
                 orderRepository.save(order);
             } else {
-                return handleWrongDate("Commissioned order No. " + id + " can't be changed");
+                return handleWrongData("Commissioned order No. " + id + " can't be changed");
             }
 
             return new ResponseEntity<>(order, HttpStatus.OK);
