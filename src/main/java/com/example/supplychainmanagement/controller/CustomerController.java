@@ -51,20 +51,20 @@ public class CustomerController {
             @RequestBody CreateOrderRequest request,
             @AuthenticationPrincipal org.springframework.security.core.userdetails.User authUser) {
         try {
-//            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            //Alternative: Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             Optional<User> optionalUser = userRepository.findByEmail(authUser.getUsername());
             User user = optionalUser.orElseThrow();
 
             long orderNo = (long) (Math.random() * 1337);
             Order order = new Order(orderNo);
             if (request.getDueDate() == null) {
-                return new ResponseEntity<>(null, HttpStatus.UNPROCESSABLE_ENTITY);
+                return new ResponseEntity<>(HttpStatus.UNPROCESSABLE_ENTITY);
             }
 
             try {
                 Date.valueOf(request.getDueDate());
             } catch (IllegalArgumentException iae) {
-                return new ResponseEntity<>(null, HttpStatus.UNPROCESSABLE_ENTITY);
+                return new ResponseEntity<>(HttpStatus.UNPROCESSABLE_ENTITY);
             }
 
             order.setDueDate(Date.valueOf(request.getDueDate()));
@@ -85,7 +85,7 @@ public class CustomerController {
             return new ResponseEntity<>(cor, HttpStatus.CREATED);
         } catch (Exception e) {
             System.out.println(e.getMessage());
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -110,7 +110,7 @@ public class CustomerController {
             return new ResponseEntity<>(cor, HttpStatus.OK);
         } catch (Exception e) {
             System.out.println(e.getMessage());
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -149,21 +149,22 @@ public class CustomerController {
     ) {
         Optional<User> optionalUser = userRepository.findByEmail(authUser.getUsername());
         User user = optionalUser.orElseThrow();
-        Optional<Order> orderData;
+        Optional<Order> optionalOrder;
         Optional<Role> optionalAdminRole = roleRepository.findByName(UserRole.ROLE_ADMIN.toString());
         Optional<Role> optionalEnterpriseRole = roleRepository.findByName(UserRole.ROLE_ENTERPRISE.toString());
 
+        // Check if user has role ADMIN or ENTERPRISE, else it's a customer
         boolean allowedRole = UserRole.contains(optionalAdminRole.map(Role::toString).orElse(null)) ||
                 UserRole.contains(optionalEnterpriseRole.map(Role::toString).orElse(null));
 
         try {
             if (allowedRole) {
-                orderData = orderRepository.findOrderByOrderNo(id);
+                optionalOrder = orderRepository.findOrderByOrderNo(id);
             } else {
-                orderData = orderRepository.findOrderByOrderNoAndUser(id, user);
+                optionalOrder = orderRepository.findOrderByOrderNoAndUser(id, user);
             }
 
-            Order order = orderData.orElseThrow();
+            Order order = optionalOrder.orElseThrow();
             if (order.getStatus() == OrderStatus.DELIVERED || order.getStatus() == OrderStatus.REJECTED) {
                 order.setUpdated(LocalDateTime.now());
                 order.setStatus(OrderStatus.CLOSED);

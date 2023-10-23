@@ -40,7 +40,7 @@ public class MySpringBootApplication implements CommandLineRunner {
     @Bean
     public CommandLineRunner commandLineRunner(ApplicationContext ctx) {
         DateFormat formatter = new SimpleDateFormat("HH:mm:ss");
-        System.out.println("Startup time: " + formatter.format(new Date(ctx.getStartupDate())));
+//        System.out.println("Startup time: " + formatter.format(new Date(ctx.getStartupDate())));
         return args -> {
            /* System.out.println("Let's inspect the beans provided by Spring Boot:");
 

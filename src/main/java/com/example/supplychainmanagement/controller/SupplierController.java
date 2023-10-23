@@ -44,7 +44,6 @@ public class SupplierController {
 
     private final StorageRepository storageRepository;
 
-
     @GetMapping(value = "/requests")
     @Secured({"ROLE_SUPPLIER", "ROLE_ADMIN"})
     public ResponseEntity<?> getAllRequestsByStatus(
