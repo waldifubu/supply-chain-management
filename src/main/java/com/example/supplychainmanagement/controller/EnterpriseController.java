@@ -161,7 +161,7 @@ public class EnterpriseController {
             @PathVariable("id") long articleNo,
             @AuthenticationPrincipal org.springframework.security.core.userdetails.User authUser) {
 
-        Product product = productRepository.getProductByArticleNo(articleNo);
+        Product product = productRepository.findProductByArticleNo(articleNo);
         if (null == product) {
             return handleWrongData("Product not found");
         }
@@ -228,7 +228,7 @@ public class EnterpriseController {
     public ResponseEntity<?> requestProductWithAllParts(
             @RequestBody RequestPartsOrderRequest productRequest
     ) {
-        Product product = productRepository.getProductByArticleNo(productRequest.getArticleNo());
+        Product product = productRepository.findProductByArticleNo(productRequest.getArticleNo());
         product.setComponentList(componentRepository.findAllByProduct(product));
         RequestComponent requestComponent;
         List<RequestComponent> requestComponentList = new ArrayList<>();
@@ -308,7 +308,7 @@ public class EnterpriseController {
     @GetMapping("/product/{articleNo}")
     @Secured({"ROLE_ENTERPRISE", "ROLE_ADMIN"})
     public ResponseEntity<Product> productInfo(@PathVariable("articleNo") long articleNo) {
-        Product product = productRepository.getProductByArticleNo(articleNo);
+        Product product = productRepository.findProductByArticleNo(articleNo);
         product.setComponentList(componentRepository.findAllByProduct(product));
         return new ResponseEntity<>(product, HttpStatus.OK);
     }

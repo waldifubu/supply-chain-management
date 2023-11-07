@@ -9,7 +9,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.env.Environment;
 
-import java.sql.Date;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 

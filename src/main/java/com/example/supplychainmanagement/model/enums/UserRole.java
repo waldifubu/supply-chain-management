@@ -7,6 +7,7 @@ public enum UserRole {
     ROLE_ENTERPRISE("enterprise"),
     ROLE_SUPPLIER("supplier"),
     ROLE_DISTRIBUTOR("distributor"),
+
     ROLE_ADMIN("admin");
 
     public final String label;
@@ -16,7 +17,7 @@ public enum UserRole {
     }
 
     public static boolean contains(String s) {
-        return Arrays.stream(values()).anyMatch(choice -> choice.name().equals(s));
+        return Arrays.stream(values()).anyMatch(choice -> choice.name().equalsIgnoreCase(s));
     }
 
     public static UserRole valueOfLabel(String label) {

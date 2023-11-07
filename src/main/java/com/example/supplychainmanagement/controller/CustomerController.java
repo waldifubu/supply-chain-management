@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.*;
 import java.sql.Date;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -75,7 +75,7 @@ public class CustomerController {
             for (Product requestedProduct : request.getProducts()) {
                 OrdersProducts ordersProducts = new OrdersProducts();
                 ordersProducts.setOrder(order);
-                Product inCart = productRepository.getProductByArticleNo(requestedProduct.getArticleNo());
+                Product inCart = productRepository.findProductByArticleNo(requestedProduct.getArticleNo());
                 ordersProducts.setProduct(inCart);
                 ordersProducts.setQty(requestedProduct.getQty());
                 ordersProductsRepository.save(ordersProducts);
@@ -92,16 +92,31 @@ public class CustomerController {
     //@TODO: Try avoid product info, just brief data
     @GetMapping("/orders")
     @Secured({"ROLE_CUSTOMER", "ROLE_ADMIN"})
-    public ResponseEntity<?> showAll(@AuthenticationPrincipal org.springframework.security.core.userdetails.User authUser) {
+    public ResponseEntity<?> getAllOrders(@AuthenticationPrincipal org.springframework.security.core.userdetails.User authUser,
+                                          @RequestParam(required = false, name = "status") Optional<String> optionalStatus) {
+        boolean notFound = false;
+        if (optionalStatus.isPresent()) {
+            notFound = Arrays.stream(OrderStatus.values()).noneMatch(o -> o.toString().equalsIgnoreCase(optionalStatus.get()));
+            if(notFound) {
+                return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+        }
+
         Optional<User> optionalUser = userRepository.findByEmail(authUser.getUsername());
         User user = optionalUser.orElseThrow();
+        List<Order> orderList;
 
         try {
-            List<Order> orderList = orderRepository.findAllByUser(user);
+            if (optionalStatus.isPresent()) {
+                var status = OrderStatus.valueOf(optionalStatus.get().toUpperCase());
+                orderList = orderRepository.findAllByUserAndStatus(user, status);
+            } else {
+                orderList = orderRepository.findAllByUser(user);
+            }
+
             List<Order> newList = new ArrayList<>();
 
-            for (Iterator<Order> it = orderList.iterator(); it.hasNext(); ) {
-                Order o = it.next();
+            for (Order o : orderList) {
                 o.setCountProducts(o.getOrdersProducts().size());
                 o.setOrdersProducts(null);
                 newList.add(o);
@@ -170,7 +185,7 @@ public class CustomerController {
                 order.setStatus(OrderStatus.CLOSED);
                 orderRepository.save(order);
             } else {
-                return new ResponseEntity<>("Order was not found", HttpStatus.NOT_FOUND);
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
 
             order.setOrdersProducts(null);

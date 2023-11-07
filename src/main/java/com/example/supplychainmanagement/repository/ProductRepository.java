@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
 
-    @Query("select p from Product p where p.articleNo = ?1")
-    Product getProductByArticleNo(long articleNo);
+//    @Query("select p from Product p where p.articleNo = ?1")
+    Product findProductByArticleNo(long articleNo);
 }
 
