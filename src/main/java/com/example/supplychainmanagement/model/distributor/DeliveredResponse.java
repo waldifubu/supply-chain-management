@@ -10,7 +10,15 @@ public class DeliveredResponse {
 
     private Order order;
 
-    private boolean onTime;
+    private boolean inTime;
 
     private double weight;
+
+    private boolean changed;
+
+    public DeliveredResponse(Order o, boolean inTime, double weight) {
+        this.order = o;
+        this.inTime = inTime;
+        this.weight = weight;
+    }
 }

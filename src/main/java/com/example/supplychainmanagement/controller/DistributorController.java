@@ -45,6 +45,8 @@ public class DistributorController {
 
     private final RoleRepository roleRepository;
 
+    private final String DISTRIBUTOR_UPDATE = "update";
+
     @GetMapping("/orders")
     @Secured({"ROLE_DISTRIBUTOR", "ROLE_ADMIN"})
     public ResponseEntity<?> showConveyableOrders() {
@@ -92,27 +94,31 @@ public class DistributorController {
 
         Optional<Order> optionalOrder = orderRepository.getOrderByOrderNo(id);
         Order order = optionalOrder.orElseThrow();
-        boolean inTime = true;
-        double weight = 0;
+        double weight;
+        boolean changed = false;
 
         try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
             if (order.getStatus() == OrderStatus.CONVEYABLE) {
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
                 LocalDateTime dateTime = LocalDateTime.parse(transitRequest.getDeliveryDateString(), formatter);
                 order.setDeliveryDate(dateTime);
                 order.setStatus(OrderStatus.IN_TRANSIT);
                 order.setUpdated(LocalDateTime.now());
                 order.setDistributor(user);
                 orderRepository.save(order);
-
-                for (OrdersProducts op : order.getOrdersProducts()) {
-                    weight += op.getProduct().getWeight();
-                }
+                changed = true;
+            } else if (transitRequest.getModify() != null && transitRequest.getModify().equalsIgnoreCase(DISTRIBUTOR_UPDATE)) {
+                LocalDateTime dateTime = LocalDateTime.parse(transitRequest.getDeliveryDateString(), formatter);
+                order.setDeliveryDate(dateTime);
+                orderRepository.save(order);
+                changed = true;
             } else {
                 handleWrongData("Wrong status of order: " + order.getStatus());
             }
 
-            DeliveredResponse response = new DeliveredResponse(order, inTime, weight);
+            weight = order.getOrdersProducts().stream().mapToDouble(op -> op.getProduct().getWeight()).sum();
+            boolean inTime = order.getDeliveryDate().isBefore(Instant.ofEpochMilli(order.getDueDate().getTime()).atZone(ZoneId.systemDefault()).toLocalDateTime());
+            DeliveredResponse response = new DeliveredResponse(order, inTime, weight, changed);
             order.setOrdersProducts(null);
 
             return new ResponseEntity<>(response, HttpStatus.OK);

@@ -22,7 +22,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.sql.Date;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -89,7 +88,6 @@ public class CustomerController {
         }
     }
 
-    //@TODO: Try avoid product info, just brief data
     @GetMapping("/orders")
     @Secured({"ROLE_CUSTOMER", "ROLE_ADMIN"})
     public ResponseEntity<?> getAllOrders(@AuthenticationPrincipal org.springframework.security.core.userdetails.User authUser,
@@ -97,8 +95,8 @@ public class CustomerController {
         boolean notFound = false;
         if (optionalStatus.isPresent()) {
             notFound = Arrays.stream(OrderStatus.values()).noneMatch(o -> o.toString().equalsIgnoreCase(optionalStatus.get()));
-            if(notFound) {
-                return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            if (notFound) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
         }
 
@@ -114,14 +112,13 @@ public class CustomerController {
                 orderList = orderRepository.findAllByUser(user);
             }
 
-            List<Order> newList = new ArrayList<>();
+            orderList = orderList.stream()
+                    .filter(order -> order.getOrdersProducts() != null)
+                    .peek(order -> order.setCountProducts(order.getOrdersProducts().size()))
+                    .peek(order -> order.setOrdersProducts(null))
+                    .toList();
 
-            for (Order o : orderList) {
-                o.setCountProducts(o.getOrdersProducts().size());
-                o.setOrdersProducts(null);
-                newList.add(o);
-            }
-            ListOrders cor = new ListOrders(newList, orderList.size());
+            ListOrders cor = new ListOrders(orderList, orderList.size());
             return new ResponseEntity<>(cor, HttpStatus.OK);
         } catch (Exception e) {
             System.out.println(e.getMessage());
@@ -139,8 +136,9 @@ public class CustomerController {
         User user = optionalUser.orElseThrow();
         Optional<Order> orderData;
         Optional<Role> optionalRole = roleRepository.findByName(UserRole.ROLE_ADMIN.name());
+        boolean isAdmin = optionalRole.isPresent() && user.getRoles().contains(optionalRole.get());
 
-        if (optionalRole.isPresent() && user.getRoles().contains(optionalRole.get())) {
+        if (isAdmin) {
             orderData = orderRepository.findOrderByOrderNo(id);
         } else {
             orderData = orderRepository.findOrderByOrderNoAndUser(id, user);
@@ -158,7 +156,7 @@ public class CustomerController {
 
     @GetMapping(value = "/close/{id}")
     @Secured({"ROLE_CUSTOMER", "ROLE_ENTERPRISE", "ROLE_ADMIN"})
-    public ResponseEntity<?> closeOrder(
+    public ResponseEntity<Object> closeOrder(
             @PathVariable("id") long id,
             @AuthenticationPrincipal org.springframework.security.core.userdetails.User authUser
     ) {

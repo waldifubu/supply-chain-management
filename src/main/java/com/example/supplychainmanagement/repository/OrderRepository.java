@@ -18,7 +18,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     List<Order> findAllByUserAndStatus(User user, OrderStatus status);
 
-    @Query("select o from Order o JOIN FETCH o.ordersProducts where o.orderNo = ?1 and o.user = ?2")
+    @Query("select o from Order o where o.orderNo = ?1 and o.user = ?2")
     Optional<Order> findOrderByOrderNoAndUser(long id, User user);
 
     @Query("select o from Order o JOIN FETCH o.ordersProducts where o.orderNo = ?1")
@@ -30,7 +30,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Query("select new Order(o.id, o.orderNo, o.orderDate, o.status, o.dueDate, o.updated, o.deliveryDate, o.ordersProducts) from Order o where o.status = ?1")
     List<Order> findAllByOrderStatus(OrderStatus o);
 
-    @Query("select new Order(o.id, o.orderNo, o.orderDate, o.status, o.dueDate, o.updated, o.deliveryDate, o.ordersProducts) from Order o where o.status = ?1 and DATE(o.orderDate) = ?2")
+    @Query("select o from Order o where o.status = ?1 and DATE(o.orderDate) = ?2")
     List<Order> findOrderByStatusAndOrderDate(OrderStatus status, Date date);
 
     @Query("select new Order(o.id, o.orderNo, o.orderDate, o.status, o.dueDate, o.updated, o.deliveryDate, o.ordersProducts) from Order o where o.orderNo = ?1")

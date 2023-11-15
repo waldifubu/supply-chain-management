@@ -93,9 +93,14 @@ public class EnterpriseController {
         }
 
         String requestStatus = requiredStatus.get().toUpperCase();
-        OrderStatus orderStatus = OrderStatus.valueOf(requestStatus);
+        OrderStatus orderStatus;
+        try {
+            orderStatus = OrderStatus.valueOf(requestStatus);
+        } catch (IllegalArgumentException iae) {
+            return handleWrongData("Data is wrong: " + requestStatus);
+        }
 
-        Date selectedDate = null;
+        Date selectedDate;
         List<Order> orderList;
 
         if (optionalDate.isPresent()) {
@@ -109,19 +114,18 @@ public class EnterpriseController {
             orderList = orderRepository.findOrderByStatus(orderStatus);
         }
 
-        /*
-        for (Order o : orderList) {
-            Optional<Order> optionalOrder = orderRepository.findOrderByOrderNo(o.getOrderNo());
-            Order order = optionalOrder.orElseThrow();
-        }
-         */
-
         orderRepository.saveAll(
                 orderList.stream()
                         .filter(order -> order.getStatus() == OrderStatus.CREATED)
                         .peek(o -> o.setStatus(OrderStatus.OPEN))
                         .toList()
         );
+
+        orderList = orderList.stream()
+                .filter(order -> order.getOrdersProducts() != null)
+                .peek(order -> order.setCountProducts(order.getOrdersProducts().size()))
+                .peek(order -> order.setOrdersProducts(null))
+                .toList();
 
         try {
             ListOrders listOrders = new ListOrders(orderList, orderList.size());

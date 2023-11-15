@@ -21,11 +21,6 @@ public class Role {
     @Column(nullable = false, unique = true)
     private String name;
 
-    /*
-    @ManyToMany(mappedBy = "roles")
-    @ToString.Exclude
-    private List<User> users;
-*/
     public Role(String roleString) {
         name = roleString;
     }

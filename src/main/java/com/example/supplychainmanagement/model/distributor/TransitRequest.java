@@ -8,7 +8,7 @@ import lombok.Getter;
 @AllArgsConstructor
 public class TransitRequest {
 
-    private String op;
+    private String modify;
 
     @JsonProperty("deliveryDate")
     private String deliveryDateString;

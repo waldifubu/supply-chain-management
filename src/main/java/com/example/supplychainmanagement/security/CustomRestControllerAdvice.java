@@ -1,12 +1,12 @@
 package com.example.supplychainmanagement.security;
 
 import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.security.SignatureException;
 import io.jsonwebtoken.security.WeakKeyException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.servlet.NoHandlerFoundException;
@@ -62,6 +62,26 @@ public class CustomRestControllerAdvice {
         PrintWriter printWriter = new PrintWriter(stringWriter);
         e.printStackTrace(printWriter);
         String stackTrace = "Key zu schwach"; //stringWriter.toString();
+
+        return new ResponseEntity<>(
+                new ErrorResponse(
+                        status,
+                        e.getMessage(),
+                        stackTrace // specifying the stack trace in case of 500s
+                ),
+                status
+        );
+    }
+
+    @ExceptionHandler(SignatureException.class) // exception handled
+    public ResponseEntity<ErrorResponse> signatureError(Exception e) {
+        HttpStatus status = HttpStatus.FORBIDDEN; // 500
+
+        // converting the stack trace to String
+        StringWriter stringWriter = new StringWriter();
+        PrintWriter printWriter = new PrintWriter(stringWriter);
+        e.printStackTrace(printWriter);
+        String stackTrace = "Key signing problem";
 
         return new ResponseEntity<>(
                 new ErrorResponse(

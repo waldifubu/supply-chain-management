@@ -2,7 +2,10 @@ package com.example.supplychainmanagement.entity;
 
 import com.example.supplychainmanagement.entity.users.User;
 import com.example.supplychainmanagement.model.enums.OrderStatus;
-import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import jakarta.persistence.*;
@@ -33,7 +36,7 @@ public class Order {
     @OneToMany(mappedBy = "order", fetch = FetchType.LAZY, orphanRemoval = true, cascade = CascadeType.ALL)
     private List<OrdersProducts> ordersProducts;
 
-//    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd.MM.yyyy hh:mm")
+    //    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd.MM.yyyy hh:mm")
 //    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     @JsonFormat(pattern = "dd.MM.yyyy HH:mm:ss")
 //    @Temporal(TemporalType.TIMESTAMP)
@@ -68,9 +71,9 @@ public class Order {
     @JoinColumn(name = "distributor_id")
     private User distributor;
 
-    public int getCountProducts() {
-        return countProducts;
-    }
+//    public int getCountProducts() {
+//        return countProducts;
+//    }
 
     public void setCountProducts(int countProducts) {
         this.countProducts = countProducts;
@@ -79,8 +82,12 @@ public class Order {
     @Transient
     private int countProducts;
 
-    public Order(Long id, long orderNo,
-                 LocalDateTime orderDate, OrderStatus status, Date dueDate, LocalDateTime updated,
+    public Order(Long id,
+                 Long orderNo,
+                 LocalDateTime orderDate,
+                 OrderStatus status,
+                 Date dueDate,
+                 LocalDateTime updated,
                  LocalDateTime deliveryDate,
                  List<OrdersProducts> ordersProducts) {
         this.id = id;
@@ -93,7 +100,13 @@ public class Order {
         this.ordersProducts = ordersProducts;
     }
 
+    //o.id, o.orderNo, o.orderDate, o.status, o.dueDate, o.updated, o.deliveryDate, o.ordersProducts
+
     public Order(long orderNo) {
         this.orderNo = orderNo;
+    }
+
+    public Order(OrderStatus status) {
+        this.status = status;
     }
 }
