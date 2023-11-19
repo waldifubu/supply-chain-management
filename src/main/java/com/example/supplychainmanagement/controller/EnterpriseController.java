@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 import java.sql.Date;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
@@ -273,7 +274,8 @@ public class EnterpriseController {
         return requestComponent;
     }
 
-    private RequestComponent requestPart(Component component, int qty) {
+    // @TODO: Maybe resolve with loop?
+    private RequestComponent requestComponent(Component component, int qty) {
         RequestComponent requestComponent = requestOnePart(component);
         requestComponent.setQty(qty);
 
@@ -287,7 +289,7 @@ public class EnterpriseController {
     ) {
         Component component = componentRepository.getPartByArticleNo(partsRequest.getArticleCode());
 
-        RequestComponent requestComponent = requestPart(component, partsRequest.getQty());
+        RequestComponent requestComponent = requestComponent(component, partsRequest.getQty());
         if (partsRequest.getComment() != null) {
             requestComponent.setComment(partsRequest.getComment());
         }
@@ -317,23 +319,24 @@ public class EnterpriseController {
         return new ResponseEntity<>(product, HttpStatus.OK);
     }
 
+    // @TODO: Rethink delivery date
     @GetMapping("/storage/check")
     @Secured({"ROLE_ENTERPRISE", "ROLE_ADMIN"})
-    public ResponseEntity<?> checkInventory() {
-        List<RequestComponent> requestComponentList = requestComponentRepository.findAllByRequestStatusOrderByRequestDate(RequestStatus.DELIVERED);
-        Set<Product> possibleProductList = new HashSet<>();
-
-        for (RequestComponent request : requestComponentList) {
-            possibleProductList.add(request.getComponent().getProduct());
-        }
+    public ResponseEntity<Object> checkInventory() {
+        // 1st Give me all request_components which are delivered
+        List<RequestComponent> requestComponentList = requestComponentRepository.findAllByRequestStatusOrderByRequestDate(RequestStatus.STORAGE);
+        // 2nd return all products who can build with ONE of these parts. Set is used to avoid duplicate products
+        Set<Product> possibleProductsSet = requestComponentList.stream().map(request -> request.getComponent().getProduct()).collect(Collectors.toSet());
 
         List<Product> productList = new ArrayList<>();
-
         Product completeProduct;
+
         try {
-            for (Product product : possibleProductList) {
+            for (Product product : possibleProductsSet) {
+                // We try to build a product with given parts list
                 completeProduct = assemblyComponentToProduct(product, requestComponentList);
 
+                // if !null means, a complete product was produced
                 if (null != completeProduct) {
                     productList.add(completeProduct);
                     Optional<Storage> optionalStorage = storageRepository.findByProduct(completeProduct);
@@ -343,6 +346,7 @@ public class EnterpriseController {
                 }
             }
 
+            // Return a list of all produced products. Could also be empty
             ListProducts listProducts = new ListProducts(productList, productList.size());
 
             return new ResponseEntity<>(listProducts, HttpStatus.OK);
@@ -374,7 +378,7 @@ public class EnterpriseController {
                 requestComponent.setUpdated(LocalDateTime.now());
 
                 if (requestComponent.getQty() == 0) {
-                    requestComponent.setRequestStatus(RequestStatus.STORAGE);
+                    requestComponent.setRequestStatus(RequestStatus.ASSEMBLED);
                 }
 
                 requestComponentRepository.save(requestComponent);

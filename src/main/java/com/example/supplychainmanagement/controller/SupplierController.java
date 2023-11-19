@@ -103,6 +103,7 @@ public class SupplierController {
         }
     }
 
+    // @TODO: Check for Admin and cols delivery date
     @PatchMapping(value = "/send/{id}")
     @Secured({"ROLE_SUPPLIER", "ROLE_ADMIN"})
     public ResponseEntity<?> transitRequest(@PathVariable("id") final UUID id,
@@ -128,7 +129,7 @@ public class SupplierController {
     public ResponseEntity<?> deliverRequest(@PathVariable("id") final UUID id,
                                             @AuthenticationPrincipal org.springframework.security.core.userdetails.User authUser) {
         try {
-            RequestComponent requestComponent = processRequest(id, authUser, RequestStatus.DELIVERED);
+            RequestComponent requestComponent = processRequest(id, authUser, RequestStatus.STORAGE);
 
             return new ResponseEntity<>(requestComponent, HttpStatus.OK);
         } catch (AccessDeniedException ace) {
@@ -147,12 +148,13 @@ public class SupplierController {
         Optional<User> optionalUser = userRepository.findByEmail(authUser.getUsername());
         User user = optionalUser.orElseThrow();
 
-        if (requestComponent.getSupplier() != null && !requestComponent.getSupplier().getEmail().equals(user.getEmail()) && requestComponent.getRequestStatus() != RequestStatus.OPEN) {
+        if (requestComponent.getSupplier() != null && !requestComponent.getSupplier().getEmail().equals(user.getEmail())
+                && requestComponent.getRequestStatus() != RequestStatus.OPEN) {
             throw new AccessDeniedException("Request is taken by another account");
         }
 
-        if (requestStatus.ordinal() < requestComponent.getRequestStatus().ordinal()) {
-            throw new AccessDeniedException("Wrong process");
+        if (requestStatus.ordinal() <= requestComponent.getRequestStatus().ordinal()) {
+            throw new AccessDeniedException("Wrong status: "+requestComponent.getRequestStatus());
         }
 
         requestComponent.setSupplier(user);

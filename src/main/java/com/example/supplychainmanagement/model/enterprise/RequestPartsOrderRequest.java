@@ -6,6 +6,7 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class RequestPartsOrderRequest {
+
     private Long articleNo;
 
     private String articleCode;
