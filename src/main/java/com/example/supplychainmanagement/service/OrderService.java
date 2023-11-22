@@ -8,7 +8,6 @@ import com.example.supplychainmanagement.repository.OrdersProductsRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -38,7 +37,7 @@ public class OrderService {
         String orderDate = order.getOrderDate() != null ? order.getOrderDate().toString() : "";
         String dueDate = order.getDueDate() != null ? order.getDueDate().toString() : "";
 
-        boolean inTime = false;
+        boolean inTime = true;
         if (null != order.getDeliveryDate() && null != order.getDueDate()) {
             inTime = order.getDeliveryDate().isBefore(Instant.ofEpochMilli(order.getDueDate().getTime()).atZone(ZoneId.systemDefault()).toLocalDateTime());
         }

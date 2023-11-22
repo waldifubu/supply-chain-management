@@ -2,8 +2,8 @@ package com.example.supplychainmanagement.dto;
 
 import com.example.supplychainmanagement.entity.Product;
 import com.example.supplychainmanagement.model.enums.OrderStatus;
+import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import jakarta.persistence.Convert;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
@@ -16,6 +16,7 @@ import java.util.List;
 @Getter
 @Setter
 @AllArgsConstructor
+@JsonFilter("filterAdmin")
 public class CompactOrder {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private Long orderId;
@@ -28,10 +29,6 @@ public class CompactOrder {
 
     private String dueDate;
 
-    //@JsonIgnore
-//    @JsonManagedReference
-    //@JsonBackReference
-    @Convert(converter = CollectionConverter.class)
     private List<Product> products;
 
     private int amount;

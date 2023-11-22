@@ -28,7 +28,7 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
 
         Map<String, Object> data = new HashMap<>();
         data.put(
-                "timestampi",
+                "timestamp",
                 new Date()
         );
         data.put(

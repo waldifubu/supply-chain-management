@@ -2,6 +2,8 @@ package com.example.supplychainmanagement.service;
 
 import com.example.supplychainmanagement.dto.UserDto;
 import com.example.supplychainmanagement.entity.users.User;
+import jakarta.annotation.security.RolesAllowed;
+
 import java.util.List;
 
 public interface UserService {
@@ -14,4 +16,6 @@ public interface UserService {
     List<User> findAllRawUsers();
 
     UserDto convertEntityToDto(User user);
+
+    boolean hasRole(String[] rolesAllowed);
 }

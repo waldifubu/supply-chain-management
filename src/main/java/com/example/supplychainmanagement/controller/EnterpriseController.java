@@ -137,7 +137,6 @@ public class EnterpriseController {
         }
     }
 
-
     @GetMapping(value = "/order/{id}")
     @Secured({"ROLE_ENTERPRISE", "ROLE_ADMIN"})
     public ResponseEntity<CompactOrder> getOrderDetails(
@@ -264,9 +263,9 @@ public class EnterpriseController {
         requestComponent.setComponent(component);
         requestComponent.setArticleCode(component.getArticleNo());
 
-        Product p = requestComponent.getComponent().getProduct();
+        Product product = requestComponent.getComponent().getProduct();
 
-        Optional<Storage> optionalStorage = storageRepository.findByProductAdmin(p);
+        Optional<Storage> optionalStorage = storageRepository.findByProductAdmin(product);
         Storage storage = optionalStorage.orElseThrow();
         storage.setStorageStatus(StorageStatus.REQUESTED);
         storageRepository.save(storage);

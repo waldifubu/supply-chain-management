@@ -31,8 +31,8 @@ public class InitializeData {
         Path path = Paths.get(firstrun);
 
         if (Files.isRegularFile(path)) {
-            System.out.println("Firstrun file exists. Run scripts");
-//            runScripts();
+            System.out.println("Firstrun file found. Let's run SQL scripts");
+            runScripts();
         }
     }
 
@@ -46,7 +46,7 @@ public class InitializeData {
             resourceDatabasePopulator.execute(dataSource);
             System.out.println("Delete firstrun file");
             Path path = Paths.get(firstrun);
-//            Files.delete(path);
+            Files.delete(path);
         } catch (Exception exception) {
             System.err.println("Source error: " + exception.getCause());
             System.err.println("Message: " + exception.getMessage());

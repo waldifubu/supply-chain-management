@@ -106,6 +106,11 @@ public class UserServiceImpl implements UserService {
         return userDto;
     }
 
+    @Override
+    public boolean hasRole(String[] rolesAllowed) {
+        return false;
+    }
+
     private Role checkRoleExist() {
         Role role = new Role("ROLE_ADMIN");
         role.setName("ROLE_ADMIN");

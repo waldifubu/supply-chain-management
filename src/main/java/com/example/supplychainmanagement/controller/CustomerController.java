@@ -13,18 +13,20 @@ import com.example.supplychainmanagement.model.enums.OrderStatus;
 import com.example.supplychainmanagement.model.enums.UserRole;
 import com.example.supplychainmanagement.repository.*;
 import com.example.supplychainmanagement.service.OrderService;
+import com.fasterxml.jackson.databind.ser.FilterProvider;
+import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.json.MappingJacksonValue;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.sql.Date;
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
@@ -128,27 +130,40 @@ public class CustomerController {
 
     @GetMapping(value = "/order/{id}")
     @Secured({"ROLE_CUSTOMER", "ROLE_ADMIN"})
-    public ResponseEntity<CompactOrder> getOrderByNo(
+    public ResponseEntity<Object> getOrderByNo(
             @PathVariable("id") long id,
             @AuthenticationPrincipal org.springframework.security.core.userdetails.User authUser
     ) {
-        Optional<User> optionalUser = userRepository.findByEmail(authUser.getUsername());
-        User user = optionalUser.orElseThrow();
-        Optional<Order> orderData;
-        Optional<Role> optionalRole = roleRepository.findByName(UserRole.ROLE_ADMIN.name());
-        boolean isAdmin = optionalRole.isPresent() && user.getRoles().contains(optionalRole.get());
-
-        if (isAdmin) {
-            orderData = orderRepository.findOrderByOrderNo(id);
-        } else {
-            orderData = orderRepository.findOrderByOrderNoAndUser(id, user);
-        }
-
-        Order order = orderData.orElseThrow();
-        CompactOrder compactOrder = orderService.createCompactOrder(order);
-
         try {
-            return new ResponseEntity<>(compactOrder, HttpStatus.OK);
+            Optional<User> optionalUser = userRepository.findByEmail(authUser.getUsername());
+            User user = optionalUser.orElseThrow();
+            Optional<Order> orderData;
+            Optional<Role> optionalRole = roleRepository.findByName(UserRole.ROLE_ADMIN.name());
+            boolean isAdmin = optionalRole.isPresent() && user.getRoles().contains(optionalRole.get());
+            SimpleBeanPropertyFilter propertyFilter;
+
+            if (isAdmin) {
+                orderData = orderRepository.findOrderByOrderNo(id);
+                propertyFilter = SimpleBeanPropertyFilter.serializeAll();
+            } else {
+                orderData = orderRepository.findOrderByOrderNoAndUser(id, user);
+                Set<String> includedFields = new HashSet<>();
+                includedFields.add("orderId");
+                includedFields.add("creatorName");
+                propertyFilter = SimpleBeanPropertyFilter.serializeAllExcept(includedFields);
+            }
+
+            Order order = orderData.orElseThrow();
+            CompactOrder compactOrder = orderService.createCompactOrder(order);
+
+            FilterProvider filterProvider = new SimpleFilterProvider().addFilter("filterAdmin", propertyFilter);
+            MappingJacksonValue value = new MappingJacksonValue(compactOrder);
+            value.setFilters(filterProvider);
+
+            return ResponseEntity.status(HttpStatus.OK).body(value);
+        } catch (NoSuchElementException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+
         } catch (Exception ex) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
