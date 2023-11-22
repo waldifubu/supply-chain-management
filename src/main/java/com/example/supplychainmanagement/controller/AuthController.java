@@ -2,7 +2,7 @@ package com.example.supplychainmanagement.controller;
 
 import com.example.supplychainmanagement.dto.UserDto;
 import com.example.supplychainmanagement.entity.users.User;
-import com.example.supplychainmanagement.service.UserService;
+import com.example.supplychainmanagement.service.api.UserService;
 import jakarta.validation.Valid;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Controller;

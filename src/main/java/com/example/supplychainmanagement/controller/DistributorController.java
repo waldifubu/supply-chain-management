@@ -29,7 +29,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
@@ -57,20 +56,19 @@ public class DistributorController {
             List<Order> orderList = orderRepository.findOrderByStatus(OrderStatus.CONVEYABLE);
             List<DeliveredResponse> newList = new ArrayList<>();
 
-            for (Iterator<Order> it = orderList.iterator(); it.hasNext(); ) {
+            for (Order order : orderList) {
                 weight = 0;
                 inTime = false;
-                Order o = it.next();
-                o.setCountProducts(o.getOrdersProducts().size());
-                for (OrdersProducts op : o.getOrdersProducts()) {
+                order.setCountProducts(order.getOrdersProducts().size());
+                for (OrdersProducts op : order.getOrdersProducts()) {
                     weight += op.getProduct().getWeight();
                 }
 
-                o.setOrdersProducts(null);
-                if (null != o.getDeliveryDate()) {
-                    inTime = LocalDateTime.now().isBefore(o.getDeliveryDate());
+                order.setOrdersProducts(null);
+                if (null != order.getDeliveryDate()) {
+                    inTime = LocalDateTime.now().isBefore(order.getDeliveryDate());
                 }
-                DeliveredResponse deliveredResponse = new DeliveredResponse(o, inTime, weight);
+                DeliveredResponse deliveredResponse = new DeliveredResponse(order, inTime, weight);
                 newList.add(deliveredResponse);
             }
 
@@ -89,15 +87,15 @@ public class DistributorController {
             @RequestBody TransitRequest transitRequest,
             @AuthenticationPrincipal org.springframework.security.core.userdetails.User authUser
     ) {
-        Optional<User> optionalUser = userRepository.findByEmail(authUser.getUsername());
-        User user = optionalUser.orElseThrow();
-
-        Optional<Order> optionalOrder = orderRepository.getOrderByOrderNo(id);
-        Order order = optionalOrder.orElseThrow();
-        double weight;
-        boolean changed = false;
-
         try {
+            Optional<User> optionalUser = userRepository.findByEmail(authUser.getUsername());
+            User user = optionalUser.orElseThrow();
+
+            Optional<Order> optionalOrder = orderRepository.getOrderByOrderNo(id);
+            Order order = optionalOrder.orElseThrow();
+            double weight;
+            boolean changed = false;
+
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
             if (order.getStatus() == OrderStatus.CONVEYABLE) {
                 LocalDateTime dateTime = LocalDateTime.parse(transitRequest.getDeliveryDateString(), formatter);

@@ -67,6 +67,15 @@ public class SupplierController {
             requestComponentList = requestComponentRepository.findAllByRequestStatusAndSupplier(requestStatus, user);
         }
 
+        List<RequestPartsOrderResponse> responseList = getRequestPartsOrderResponses(requestComponentList);
+        try {
+            return new ResponseEntity<>(responseList, HttpStatus.OK);
+        } catch (Exception ex) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
+
+    private static List<RequestPartsOrderResponse> getRequestPartsOrderResponses(List<RequestComponent> requestComponentList) {
         List<RequestPartsOrderResponse> responseList = new ArrayList<>();
 
         for (RequestComponent requestComponent : requestComponentList) {
@@ -81,11 +90,8 @@ public class SupplierController {
 
             responseList.add(response);
         }
-        try {
-            return new ResponseEntity<>(responseList, HttpStatus.OK);
-        } catch (Exception ex) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
+
+        return responseList;
     }
 
     @PatchMapping(value = "/approve/{id}")
@@ -154,7 +160,7 @@ public class SupplierController {
         }
 
         if (requestStatus.ordinal() <= requestComponent.getRequestStatus().ordinal()) {
-            throw new AccessDeniedException("Wrong status: "+requestComponent.getRequestStatus());
+            throw new AccessDeniedException("Wrong status: " + requestComponent.getRequestStatus());
         }
 
         requestComponent.setSupplier(user);

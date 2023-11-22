@@ -1,4 +1,4 @@
-package com.example.supplychainmanagement.service;
+package com.example.supplychainmanagement.service.api;
 
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.security.WeakKeyException;

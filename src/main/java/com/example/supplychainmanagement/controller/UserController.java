@@ -1,7 +1,7 @@
 package com.example.supplychainmanagement.controller;
 
 import com.example.supplychainmanagement.dto.UserDto;
-import com.example.supplychainmanagement.service.UserService;
+import com.example.supplychainmanagement.service.api.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

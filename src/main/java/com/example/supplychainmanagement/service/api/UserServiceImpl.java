@@ -1,4 +1,4 @@
-package com.example.supplychainmanagement.service;
+package com.example.supplychainmanagement.service.api;
 
 import com.example.supplychainmanagement.dto.UserDto;
 import com.example.supplychainmanagement.entity.Role;

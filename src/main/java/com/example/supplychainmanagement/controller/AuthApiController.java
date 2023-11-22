@@ -3,7 +3,7 @@ package com.example.supplychainmanagement.controller;
 import com.example.supplychainmanagement.auth.AuthenticationRequest;
 import com.example.supplychainmanagement.auth.AuthenticationResponse;
 import com.example.supplychainmanagement.auth.RegisterRequest;
-import com.example.supplychainmanagement.service.ApiAuthenticationService;
+import com.example.supplychainmanagement.service.api.ApiAuthenticationService;
 import io.jsonwebtoken.ExpiredJwtException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -37,6 +37,5 @@ public class AuthApiController {
             AuthenticationResponse exp = AuthenticationResponse.builder().token("Token expired").build();
             return ResponseEntity.ok(exp);
         }
-
     }
 }

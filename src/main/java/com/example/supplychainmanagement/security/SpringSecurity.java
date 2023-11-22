@@ -1,6 +1,6 @@
 package com.example.supplychainmanagement.security;
 
-import com.example.supplychainmanagement.service.JwtAuthenticationFilter;
+import com.example.supplychainmanagement.service.api.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;

@@ -1,4 +1,4 @@
-package com.example.supplychainmanagement.service;
+package com.example.supplychainmanagement.service.api;
 
 import com.example.supplychainmanagement.auth.AuthenticationRequest;
 import com.example.supplychainmanagement.auth.AuthenticationResponse;
@@ -6,6 +6,8 @@ import com.example.supplychainmanagement.auth.RegisterRequest;
 import com.example.supplychainmanagement.dto.UserDto;
 import com.example.supplychainmanagement.model.enums.UserRole;
 import com.example.supplychainmanagement.repository.UserRepository;
+import com.example.supplychainmanagement.service.api.JwtService;
+import com.example.supplychainmanagement.service.api.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;

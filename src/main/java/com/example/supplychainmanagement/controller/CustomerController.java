@@ -2,8 +2,6 @@ package com.example.supplychainmanagement.controller;
 
 import com.example.supplychainmanagement.dto.CompactOrder;
 import com.example.supplychainmanagement.entity.Order;
-import com.example.supplychainmanagement.entity.OrdersProducts;
-import com.example.supplychainmanagement.entity.Product;
 import com.example.supplychainmanagement.entity.Role;
 import com.example.supplychainmanagement.entity.users.User;
 import com.example.supplychainmanagement.model.customer.CreateOrderRequest;
@@ -11,8 +9,10 @@ import com.example.supplychainmanagement.model.customer.CreateOrderResponse;
 import com.example.supplychainmanagement.model.customer.ListOrders;
 import com.example.supplychainmanagement.model.enums.OrderStatus;
 import com.example.supplychainmanagement.model.enums.UserRole;
-import com.example.supplychainmanagement.repository.*;
-import com.example.supplychainmanagement.service.OrderService;
+import com.example.supplychainmanagement.repository.OrderRepository;
+import com.example.supplychainmanagement.repository.RoleRepository;
+import com.example.supplychainmanagement.repository.UserRepository;
+import com.example.supplychainmanagement.service.business.OrderService;
 import com.fasterxml.jackson.databind.ser.FilterProvider;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
@@ -25,7 +25,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.sql.Date;
-import java.time.LocalDateTime;
 import java.util.*;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
@@ -34,11 +33,7 @@ import java.util.*;
 @RequestMapping("/api/customer")
 public class CustomerController {
 
-    private final ProductRepository productRepository;
-
     private final OrderRepository orderRepository;
-
-    private final OrdersProductsRepository ordersProductsRepository;
 
     private final UserRepository userRepository;
 
@@ -49,15 +44,13 @@ public class CustomerController {
     @PostMapping("/order")
     @Secured({"ROLE_CUSTOMER", "ROLE_ADMIN"})
     public ResponseEntity<CreateOrderResponse> createOrder(
-            @RequestBody CreateOrderRequest request,
+            @RequestBody(required = true) CreateOrderRequest request,
             @AuthenticationPrincipal org.springframework.security.core.userdetails.User authUser) {
         try {
-            //Alternative: Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            //Or: Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             Optional<User> optionalUser = userRepository.findByEmail(authUser.getUsername());
             User user = optionalUser.orElseThrow();
 
-            long orderNo = (long) (Math.random() * 1337);
-            Order order = new Order(orderNo);
             if (request.getDueDate() == null) {
                 return new ResponseEntity<>(HttpStatus.UNPROCESSABLE_ENTITY);
             }
@@ -68,20 +61,7 @@ public class CustomerController {
                 return new ResponseEntity<>(HttpStatus.UNPROCESSABLE_ENTITY);
             }
 
-            order.setDueDate(Date.valueOf(request.getDueDate()));
-            order.setOrderDate(LocalDateTime.now());
-            order.setUser(user);
-            orderRepository.save(order);
-
-            for (Product requestedProduct : request.getProducts()) {
-                OrdersProducts ordersProducts = new OrdersProducts();
-                ordersProducts.setOrder(order);
-                Product inCart = productRepository.findProductByArticleNo(requestedProduct.getArticleNo());
-                ordersProducts.setProduct(inCart);
-                ordersProducts.setQty(requestedProduct.getQty());
-                ordersProductsRepository.save(ordersProducts);
-            }
-
+            Order order = orderService.createOrder(request, user);
             CreateOrderResponse cor = new CreateOrderResponse(order.getOrderNo(), order.getStatus(), order.getOrderDate());
             return new ResponseEntity<>(cor, HttpStatus.CREATED);
         } catch (Exception e) {
@@ -94,25 +74,19 @@ public class CustomerController {
     @Secured({"ROLE_CUSTOMER", "ROLE_ADMIN"})
     public ResponseEntity<?> getAllOrders(@AuthenticationPrincipal org.springframework.security.core.userdetails.User authUser,
                                           @RequestParam(required = false, name = "status") Optional<String> optionalStatus) {
-        boolean notFound = false;
         if (optionalStatus.isPresent()) {
-            notFound = Arrays.stream(OrderStatus.values()).noneMatch(o -> o.toString().equalsIgnoreCase(optionalStatus.get()));
+            boolean notFound = Arrays.stream(OrderStatus.values()).noneMatch(o -> o.toString().equalsIgnoreCase(optionalStatus.get()));
             if (notFound) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
         }
 
-        Optional<User> optionalUser = userRepository.findByEmail(authUser.getUsername());
-        User user = optionalUser.orElseThrow();
-        List<Order> orderList;
-
         try {
-            if (optionalStatus.isPresent()) {
-                var status = OrderStatus.valueOf(optionalStatus.get().toUpperCase());
-                orderList = orderRepository.findAllByUserAndStatus(user, status);
-            } else {
-                orderList = orderRepository.findAllByUser(user);
-            }
+            Optional<User> optionalUser = userRepository.findByEmail(authUser.getUsername());
+            User user = optionalUser.orElseThrow();
+            OrderStatus status = optionalStatus.map(s -> OrderStatus.valueOf(s.toUpperCase())).orElse(OrderStatus.OPEN);
+
+            List<Order> orderList = orderService.getOrderByUserAndStatus(user, status);
 
             orderList = orderList.stream()
                     .filter(order -> order.getOrdersProducts() != null)
@@ -130,7 +104,7 @@ public class CustomerController {
 
     @GetMapping(value = "/order/{id}")
     @Secured({"ROLE_CUSTOMER", "ROLE_ADMIN"})
-    public ResponseEntity<Object> getOrderByNo(
+    public ResponseEntity<Object> getOneOrderByNo(
             @PathVariable("id") long id,
             @AuthenticationPrincipal org.springframework.security.core.userdetails.User authUser
     ) {
@@ -157,10 +131,10 @@ public class CustomerController {
             CompactOrder compactOrder = orderService.createCompactOrder(order);
 
             FilterProvider filterProvider = new SimpleFilterProvider().addFilter("filterAdmin", propertyFilter);
-            MappingJacksonValue value = new MappingJacksonValue(compactOrder);
-            value.setFilters(filterProvider);
+            MappingJacksonValue jacksonValue = new MappingJacksonValue(compactOrder);
+            jacksonValue.setFilters(filterProvider);
 
-            return ResponseEntity.status(HttpStatus.OK).body(value);
+            return ResponseEntity.status(HttpStatus.OK).body(jacksonValue);
         } catch (NoSuchElementException ex) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
 
@@ -177,30 +151,9 @@ public class CustomerController {
     ) {
         Optional<User> optionalUser = userRepository.findByEmail(authUser.getUsername());
         User user = optionalUser.orElseThrow();
-        Optional<Order> optionalOrder;
-        Optional<Role> optionalAdminRole = roleRepository.findByName(UserRole.ROLE_ADMIN.toString());
-        Optional<Role> optionalEnterpriseRole = roleRepository.findByName(UserRole.ROLE_ENTERPRISE.toString());
-
-        // Check if user has role ADMIN or ENTERPRISE, else it's a customer
-        boolean allowedRole = UserRole.contains(optionalAdminRole.map(Role::toString).orElse(null)) ||
-                UserRole.contains(optionalEnterpriseRole.map(Role::toString).orElse(null));
 
         try {
-            if (allowedRole) {
-                optionalOrder = orderRepository.findOrderByOrderNo(id);
-            } else {
-                optionalOrder = orderRepository.findOrderByOrderNoAndUser(id, user);
-            }
-
-            Order order = optionalOrder.orElseThrow();
-            if (order.getStatus() == OrderStatus.DELIVERED || order.getStatus() == OrderStatus.REJECTED) {
-                order.setUpdated(LocalDateTime.now());
-                order.setStatus(OrderStatus.CLOSED);
-                orderRepository.save(order);
-            } else {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-            }
-
+            Order order = orderService.closeOrder(id, user);
             order.setOrdersProducts(null);
 
             return new ResponseEntity<>(order, HttpStatus.OK);

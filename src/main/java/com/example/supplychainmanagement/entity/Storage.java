@@ -1,6 +1,5 @@
 package com.example.supplychainmanagement.entity;
 
-import com.example.supplychainmanagement.entity.users.User;
 import com.example.supplychainmanagement.model.enums.StorageStatus;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.persistence.*;
@@ -21,34 +20,28 @@ public class Storage {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id")
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private Product product;
 
-    private int inStock = 0;
+    private int stock = 0;
 
     private Date updated;
-
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    private User user;
 
     @Enumerated(EnumType.STRING)
     private StorageStatus storageStatus = StorageStatus.NOT_REQUESTED;
 
-    private Date lastDelivery;
+    @Transient
+    private String productName;
 
-    private Date nextDelivery;
-
-    public Storage(Long id, Product p, int inStock, Date updated, Date lastDelivery, Date nextDelivery) {
+    public Storage(Long id, Product p, int stock, Date updated) {
         this.id = id;
         product = p;
-        this.inStock = inStock;
+        this.stock = stock;
         this.updated = updated;
-        this.lastDelivery = lastDelivery;
-        this.nextDelivery = nextDelivery;
     }
 }

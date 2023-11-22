@@ -9,7 +9,7 @@ import com.example.supplychainmanagement.model.enterprise.RequestPartsOrderReque
 import com.example.supplychainmanagement.model.enterprise.RequestPartsOrderResponse;
 import com.example.supplychainmanagement.model.enums.*;
 import com.example.supplychainmanagement.repository.*;
-import com.example.supplychainmanagement.service.OrderService;
+import com.example.supplychainmanagement.service.business.OrderService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -64,7 +64,7 @@ public class EnterpriseController {
         return ResponseEntity.badRequest().body(objectNode);
     }
 
-    private ResponseEntity<JsonNode> handleWrongData(String message) {
+    private ResponseEntity<Object> handleWrongData(String message) {
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode objectNode = mapper.createObjectNode();
         objectNode.put("error", HttpStatus.BAD_REQUEST.value());
@@ -85,7 +85,7 @@ public class EnterpriseController {
 
     @GetMapping("/orders")
     @Secured({"ROLE_ENTERPRISE", "ROLE_ADMIN"})
-    public ResponseEntity<?> showAllOrders(
+    public ResponseEntity<?> getAllOrders(
             @RequestParam(value = "status") Optional<String> requiredStatus,
             @RequestParam(value = "date", required = false) Optional<String> optionalDate
     ) throws MissingServletRequestParameterException, IllegalArgumentException {
@@ -115,6 +115,8 @@ public class EnterpriseController {
             orderList = orderRepository.findOrderByStatus(orderStatus);
         }
 
+        //Important: Here, we change status from every created order to open
+        //It means somebody reviewed the order
         orderRepository.saveAll(
                 orderList.stream()
                         .filter(order -> order.getStatus() == OrderStatus.CREATED)
@@ -145,6 +147,7 @@ public class EnterpriseController {
         Optional<Order> orderData = orderRepository.findOrderByOrderNo(id);
         Order order = orderData.orElseThrow();
 
+        //It means somebody reviewed the order
         if (order.getStatus() == OrderStatus.CREATED) {
             order.setStatus(OrderStatus.OPEN);
             orderRepository.save(order);
@@ -161,7 +164,7 @@ public class EnterpriseController {
 
     @GetMapping("/storage/{id}")
     @Secured({"ROLE_ENTERPRISE", "ROLE_ADMIN"})
-    public ResponseEntity<?> getStorageDetails(
+    public ResponseEntity<Object> getStorageDetails(
             @PathVariable("id") long articleNo,
             @AuthenticationPrincipal org.springframework.security.core.userdetails.User authUser) {
 
@@ -175,17 +178,22 @@ public class EnterpriseController {
         Optional<User> optionalUser = userRepository.findByEmail(authUser.getUsername());
         User user = optionalUser.orElseThrow();
         Optional<Role> optionalRole = roleRepository.findByName(UserRole.ROLE_ADMIN.toString());
-
+        boolean isAdmin = false;
         // First check, if we are admin
         if (optionalRole.isPresent() && user.getRoles().contains(optionalRole.get())) {
             optionalStorage = storageRepository.findByProductAdmin(product);
             List<Component> componentList = componentRepository.findAllByProduct(product);
             product.setComponentList(componentList);
+            isAdmin = true;
         } else {
             optionalStorage = storageRepository.findByProduct(product);
         }
         Storage storage = optionalStorage.orElseGet(Storage::new);
-        storage.setProduct(product);
+        storage.setProductName(product.getName());
+
+        if(isAdmin){
+            storage.setProduct(product);
+        }
 
         try {
             return new ResponseEntity<>(storage, HttpStatus.OK);
@@ -208,10 +216,10 @@ public class EnterpriseController {
             Storage storage = optionalStorage.orElseThrow();
             Product p = op.getProduct();
             p.setQty(op.getQty());
-            p.setInStock(storage.getInStock());
+            p.setInStock(storage.getStock());
 
             //Calculate which products are needed
-            if (storage.getInStock() >= op.getQty()) {
+            if (storage.getStock() >= op.getQty()) {
                 op.setStatus(ProductStatus.IN_STOCK);
             } else {
                 op.setStatus(ProductStatus.OUT_OF_STOCK);
@@ -340,7 +348,7 @@ public class EnterpriseController {
                     productList.add(completeProduct);
                     Optional<Storage> optionalStorage = storageRepository.findByProduct(completeProduct);
                     Storage storage = optionalStorage.orElseThrow();
-                    storage.setLastDelivery(new Date(java.lang.System.currentTimeMillis()));
+//                    storage.setLastDelivery(new Date(java.lang.System.currentTimeMillis()));
                     storageRepository.save(storage);
                 }
             }
@@ -386,7 +394,7 @@ public class EnterpriseController {
             if (null != requestComponent) {
                 Optional<Storage> optionalStorage = storageRepository.findByProduct(requestComponent.getComponent().getProduct());
                 Storage storage = optionalStorage.orElseThrow();
-                storage.setLastDelivery(new Date(Calendar.getInstance().getTime().getTime()));
+//                storage.setLastDelivery(new Date(Calendar.getInstance().getTime().getTime()));
                 storageRepository.save(storage);
 
                 return requestComponent.getComponent().getProduct();
@@ -451,13 +459,13 @@ public class EnterpriseController {
 
             boolean allInStock = true;
             for (OrdersProducts op : opList) {
-                Product p = op.getProduct();
+                Product product = op.getProduct();
                 int amount = op.getQty();
 
-                Optional<Storage> optionalStorage = storageRepository.findByProduct(p);
+                Optional<Storage> optionalStorage = storageRepository.findByProduct(product);
                 Storage storage = optionalStorage.orElseThrow();
 
-                if (storage.getInStock() >= amount) {
+                if (storage.getStock() >= amount) {
                     op.getProduct().setProductStatus(ProductStatus.IN_STOCK);
                     op.getProduct().setInStock(op.getQty());
                     op.setStatus(ProductStatus.IN_STOCK);
