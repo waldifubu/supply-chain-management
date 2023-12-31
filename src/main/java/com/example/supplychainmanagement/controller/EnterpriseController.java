@@ -283,7 +283,7 @@ public class EnterpriseController {
 
     // @TODO: Maybe resolve with loop?
     private RequestComponent requestComponent(Component component, int qty) {
-        RequestComponent requestComponent = requestOnePart(component);
+        var requestComponent = requestOnePart(component);
         requestComponent.setQty(qty);
 
         return requestComponent;
@@ -296,19 +296,19 @@ public class EnterpriseController {
     ) {
         Component component = componentRepository.getPartByArticleNo(partsRequest.getArticleCode());
 
-        RequestComponent requestComponent = requestComponent(component, partsRequest.getQty());
+        RequestComponent reqComponent = requestComponent(component, partsRequest.getQty());
         if (partsRequest.getComment() != null) {
-            requestComponent.setComment(partsRequest.getComment());
+            reqComponent.setComment(partsRequest.getComment());
         }
-        requestComponentRepository.save(requestComponent);
+        requestComponentRepository.save(reqComponent);
 
-        RequestPartsOrderResponse response = new RequestPartsOrderResponse(
-                requestComponent.getId(),
+        var response = new RequestPartsOrderResponse(
+                reqComponent.getId(),
                 component.getArticleNo(),
-                requestComponent.getQty(),
-                requestComponent.getComment(),
-                requestComponent.getRequestStatus(),
-                requestComponent.getRequestDate()
+                reqComponent.getQty(),
+                reqComponent.getComment(),
+                reqComponent.getRequestStatus(),
+                reqComponent.getRequestDate()
         );
 
         try {
@@ -347,8 +347,12 @@ public class EnterpriseController {
                 if (null != completeProduct) {
                     productList.add(completeProduct);
                     Optional<Storage> optionalStorage = storageRepository.findByProduct(completeProduct);
-                    Storage storage = optionalStorage.orElseThrow();
+                    Storage storage = optionalStorage.orElseGet(Storage::new);
+                    storage.setStock(storage.getStock()+1);
+                    storage.setUpdated(LocalDateTime.now());
 //                    storage.setLastDelivery(new Date(java.lang.System.currentTimeMillis()));
+                    // @TODO: If we an empty storage
+                    //storage.setProduct(completeProduct);
                     storageRepository.save(storage);
                 }
             }

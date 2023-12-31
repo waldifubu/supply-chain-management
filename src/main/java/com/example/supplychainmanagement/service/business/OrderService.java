@@ -101,12 +101,7 @@ public class OrderService {
         boolean allowedRole = UserRole.contains(optionalAdminRole.map(Role::toString).orElse(null)) ||
                 UserRole.contains(optionalEnterpriseRole.map(Role::toString).orElse(null));
 
-        Optional<Order> optionalOrder;
-        if (allowedRole) {
-            optionalOrder = orderRepository.findOrderByOrderNo(orderNo);
-        } else {
-            optionalOrder = orderRepository.findOrderByOrderNoAndUser(orderNo, user);
-        }
+        Optional<Order> optionalOrder = allowedRole ? orderRepository.findOrderByOrderNo(orderNo) : orderRepository.findOrderByOrderNoAndUser(orderNo, user);
 
         Order order = optionalOrder.orElseThrow();
 

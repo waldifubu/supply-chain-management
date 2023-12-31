@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
 import java.sql.Date;
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -30,7 +31,7 @@ public class Storage {
 
     private int stock = 0;
 
-    private Date updated;
+    private LocalDateTime updated;
 
     @Enumerated(EnumType.STRING)
     private StorageStatus storageStatus = StorageStatus.NOT_REQUESTED;
@@ -38,7 +39,7 @@ public class Storage {
     @Transient
     private String productName;
 
-    public Storage(Long id, Product p, int stock, Date updated) {
+    public Storage(Long id, Product p, int stock, LocalDateTime updated) {
         this.id = id;
         product = p;
         this.stock = stock;
