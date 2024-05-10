@@ -1,5 +1,6 @@
 package com.example.supplychainmanagement.security;
 
+import io.jsonwebtoken.security.SignatureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -19,6 +20,7 @@ public class CustomControllerAdvice {
     public String handleNotAllowed(AccessDeniedException ex) {
         return "login";
     }
+
 
 
     // fallback method
@@ -68,6 +70,29 @@ public class CustomControllerAdvice {
         );
     }
 
+
+    @ExceptionHandler(SignatureException.class) // exception handled
+    public ResponseEntity<ErrorResponse> signatureFailed(Exception e) {
+        // ... potential custom logic
+
+        HttpStatus status = HttpStatus.UNAUTHORIZED;
+
+        // converting the stack trace to String
+        StringWriter stringWriter = new StringWriter();
+        PrintWriter printWriter = new PrintWriter(stringWriter);
+        e.printStackTrace(printWriter);
+        String stackTrace = "Alle"; //stringWriter.toString();
+
+
+        return new ResponseEntity<>(
+                new ErrorResponse(
+                        status,
+                        e.getMessage(),
+                        "Token is invalid. Try login again."
+                ),
+                status
+        );
+    }
 
 
 

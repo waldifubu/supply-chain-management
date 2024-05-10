@@ -1,6 +1,7 @@
 package com.example.supplychainmanagement.service.api;
 
 import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.security.SignatureException;
 import io.jsonwebtoken.security.WeakKeyException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -45,9 +46,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
         jwt = authHeader.substring(7);
         try {
+
             jwtService.isTokenExpired(jwt);
             userEmail = jwtService.extractUsername(jwt);
         } catch (ExpiredJwtException | WeakKeyException ex) {
+            final String expiredMsg = ex.getMessage();
+            logger.warn(expiredMsg);
+            exceptionResolver.resolveException(request, response, null, ex);
+            return;
+        } catch (SignatureException ex) {
             final String expiredMsg = ex.getMessage();
             logger.warn(expiredMsg);
             exceptionResolver.resolveException(request, response, null, ex);

@@ -25,6 +25,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.sql.Date;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
@@ -33,14 +35,19 @@ import java.util.*;
 @RequestMapping("/api/customer")
 public class CustomerController {
 
-    private final OrderRepository orderRepository;
-
     private final UserRepository userRepository;
 
     private final RoleRepository roleRepository;
 
     private final OrderService orderService;
 
+    /**
+     * Create order
+     *
+     * @param request Request body
+     * @param authUser Auth user
+     * @return Order confirmation
+     */
     @PostMapping("/order")
     @Secured({"ROLE_CUSTOMER", "ROLE_ADMIN"})
     public ResponseEntity<CreateOrderResponse> createOrder(
@@ -77,7 +84,7 @@ public class CustomerController {
         if (optionalStatus.isPresent()) {
             boolean notFound = Arrays.stream(OrderStatus.values()).noneMatch(o -> o.toString().equalsIgnoreCase(optionalStatus.get()));
             if (notFound) {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                return ResponseEntity.notFound().build();
             }
         }
 
@@ -88,13 +95,14 @@ public class CustomerController {
 
             List<Order> orderList = orderService.getOrderByUserAndStatus(user, status);
 
-            orderList = orderList.stream()
+            // Change output: First count all products, then remove from array
+            var newOrderList = orderList.stream()
                     .filter(order -> order.getOrdersProducts() != null)
                     .peek(order -> order.setCountProducts(order.getOrdersProducts().size()))
                     .peek(order -> order.setOrdersProducts(null))
                     .toList();
 
-            ListOrders cor = new ListOrders(orderList, orderList.size());
+            ListOrders cor = new ListOrders(newOrderList);
             return new ResponseEntity<>(cor, HttpStatus.OK);
         } catch (Exception e) {
             System.out.println(e.getMessage());
@@ -102,6 +110,14 @@ public class CustomerController {
         }
     }
 
+
+    /**
+     * Get certain order with order no
+     *
+     * @param id Order id
+     * @param authUser Logged in user
+     * @return Order
+     */
     @GetMapping(value = "/order/{id}")
     @Secured({"ROLE_CUSTOMER", "ROLE_ADMIN"})
     public ResponseEntity<Object> getOneOrderByNo(
@@ -117,10 +133,11 @@ public class CustomerController {
             SimpleBeanPropertyFilter propertyFilter;
 
             if (isAdmin) {
-                orderData = orderRepository.findOrderByOrderNo(id);
+                orderData = orderService.getOrder(id);
                 propertyFilter = SimpleBeanPropertyFilter.serializeAll();
             } else {
-                orderData = orderRepository.findOrderByOrderNoAndUser(id, user);
+                orderData = orderService.getOrder(id, user);
+                // Properties to hide
                 Set<String> includedFields = new HashSet<>();
                 includedFields.add("orderId");
                 includedFields.add("creatorName");
@@ -136,13 +153,20 @@ public class CustomerController {
 
             return ResponseEntity.status(HttpStatus.OK).body(jacksonValue);
         } catch (NoSuchElementException ex) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+            return ResponseEntity.notFound().build();
 
         } catch (Exception ex) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
 
+    /**
+     * Close order
+     *
+     * @param id
+     * @param authUser
+     * @return
+     */
     @GetMapping(value = "/close/{id}")
     @Secured({"ROLE_CUSTOMER", "ROLE_ENTERPRISE", "ROLE_ADMIN"})
     public ResponseEntity<Object> closeOrder(
@@ -153,12 +177,21 @@ public class CustomerController {
         User user = optionalUser.orElseThrow();
 
         try {
+            var optionalOrder =  orderService.getOrder(id);
+            var beforeOrder = optionalOrder.orElseThrow();
+            LocalDateTime beforeChange = beforeOrder.getUpdated();
+
             Order order = orderService.closeOrder(id, user);
             order.setOrdersProducts(null);
 
-            return new ResponseEntity<>(order, HttpStatus.OK);
+            var afterChange = order.getUpdated();
+            var status = beforeChange.equals(afterChange) ? HttpStatus.ALREADY_REPORTED : HttpStatus.CREATED;
+
+            return new ResponseEntity<>(order, status);
+        } catch (NoSuchElementException ex) {
+            return ResponseEntity.notFound().build();
         } catch (Exception ex) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
 }

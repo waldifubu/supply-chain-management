@@ -44,7 +44,7 @@ public class InitializeData {
         resourceDatabasePopulator.addScript(new ClassPathResource(SQLDataFile));
         try {
             resourceDatabasePopulator.execute(dataSource);
-            System.out.println("Delete firstrun file");
+            System.out.println("Delete first run file");
             Path path = Paths.get(firstrun);
             Files.delete(path);
         } catch (Exception exception) {

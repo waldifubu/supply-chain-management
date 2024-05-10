@@ -2,16 +2,14 @@ package com.example.supplychainmanagement.controller;
 
 import com.example.supplychainmanagement.entity.Order;
 import com.example.supplychainmanagement.entity.OrdersProducts;
-import com.example.supplychainmanagement.entity.Role;
 import com.example.supplychainmanagement.entity.users.User;
-import com.example.supplychainmanagement.model.customer.ListOrders;
 import com.example.supplychainmanagement.model.distributor.DeliveredResponse;
+import com.example.supplychainmanagement.model.distributor.Delivery;
 import com.example.supplychainmanagement.model.distributor.TransitRequest;
 import com.example.supplychainmanagement.model.enums.OrderStatus;
-import com.example.supplychainmanagement.model.enums.UserRole;
-import com.example.supplychainmanagement.repository.OrderRepository;
-import com.example.supplychainmanagement.repository.RoleRepository;
 import com.example.supplychainmanagement.repository.UserRepository;
+import com.example.supplychainmanagement.service.business.AdminService;
+import com.example.supplychainmanagement.service.business.OrderService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -40,12 +38,17 @@ public class DistributorController {
 
     private final UserRepository userRepository;
 
-    private final OrderRepository orderRepository;
+    private final OrderService orderService;
 
-    private final RoleRepository roleRepository;
+    private final AdminService adminService;
 
-    private final String DISTRIBUTOR_UPDATE = "update";
+    private final String UPDATE_DEL_DATE = "update";
 
+    /**
+     * Get all orders, which are ready for delivery
+     *
+     * @return Orders
+     */
     @GetMapping("/orders")
     @Secured({"ROLE_DISTRIBUTOR", "ROLE_ADMIN"})
     public ResponseEntity<?> showConveyableOrders() {
@@ -53,13 +56,13 @@ public class DistributorController {
         boolean inTime;
 
         try {
-            List<Order> orderList = orderRepository.findOrderByStatus(OrderStatus.CONVEYABLE);
-            List<DeliveredResponse> newList = new ArrayList<>();
+            List<Order> orderList = orderService.findOrderByStatus(OrderStatus.CONVEYABLE);
+            List<Delivery> newList = new ArrayList<>();
 
             for (Order order : orderList) {
-                weight = 0;
+                weight = 0.0;
                 inTime = false;
-                order.setCountProducts(order.getOrdersProducts().size());
+                int countProducts = order.getOrdersProducts().size();
                 for (OrdersProducts op : order.getOrdersProducts()) {
                     weight += op.getProduct().getWeight();
                 }
@@ -68,18 +71,35 @@ public class DistributorController {
                 if (null != order.getDeliveryDate()) {
                     inTime = LocalDateTime.now().isBefore(order.getDeliveryDate());
                 }
-                DeliveredResponse deliveredResponse = new DeliveredResponse(order, inTime, weight);
-                newList.add(deliveredResponse);
+                Delivery delivery = new Delivery(
+                        order.getOrderNo(),
+                        order.getOrderDate(),
+                        order.getStatus(),
+                        order.getUpdated(),
+                        order.getDueDate(),
+                        countProducts,
+                        inTime,
+                        weight
+                );
+
+                newList.add(delivery);
             }
 
-            ListOrders cor = new ListOrders(newList, orderList.size());
-
-            return new ResponseEntity<>(cor, HttpStatus.OK);
+            return new ResponseEntity<>(newList, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    //@todo: split in post for first time with no body and then patch for delivery date change
+    /**
+     * Distributor sets status order is on the way to customer, for Distributor only
+     *
+     * @param id
+     * @param transitRequest
+     * @param authUser
+     * @return
+     */
     @PatchMapping("/send/{id}")
     @Secured({"ROLE_DISTRIBUTOR"})
     public ResponseEntity<?> transitOrder(
@@ -91,25 +111,28 @@ public class DistributorController {
             Optional<User> optionalUser = userRepository.findByEmail(authUser.getUsername());
             User user = optionalUser.orElseThrow();
 
-            Optional<Order> optionalOrder = orderRepository.getOrderByOrderNo(id);
+            Optional<Order> optionalOrder = orderService.getOrder(id);
             Order order = optionalOrder.orElseThrow();
             double weight;
-            boolean changed = false;
+            var changed = false;
 
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+            // First, let's see if it's in correct status. Yes it is
             if (order.getStatus() == OrderStatus.CONVEYABLE) {
                 LocalDateTime dateTime = LocalDateTime.parse(transitRequest.getDeliveryDateString(), formatter);
                 order.setDeliveryDate(dateTime);
                 order.setStatus(OrderStatus.IN_TRANSIT);
-                order.setUpdated(LocalDateTime.now());
                 order.setDistributor(user);
-                orderRepository.save(order);
+                orderService.updateOrder(order);
                 changed = true;
-            } else if (transitRequest.getModify() != null && transitRequest.getModify().equalsIgnoreCase(DISTRIBUTOR_UPDATE)) {
+            // For corrections, we can use key "modify" in JSON to overwrite the delivery date
+            } else if (transitRequest.getModify() != null && transitRequest.getModify().equalsIgnoreCase(UPDATE_DEL_DATE)) {
                 LocalDateTime dateTime = LocalDateTime.parse(transitRequest.getDeliveryDateString(), formatter);
                 order.setDeliveryDate(dateTime);
-                orderRepository.save(order);
+                orderService.updateOrder(order);
                 changed = true;
+            // Otherwise, the order is not in the correct status
             } else {
                 handleWrongData("Wrong status of order: " + order.getStatus());
             }
@@ -125,7 +148,14 @@ public class DistributorController {
         }
     }
 
-    @GetMapping("/delivered/{id}")
+    /**
+     * Order is delivered to customer
+     *
+     * @param id
+     * @param authUser
+     * @return
+     */
+    @PutMapping("/delivered/{id}")
     @Secured({"ROLE_DISTRIBUTOR", "ROLE_ADMIN"})
     public ResponseEntity<?> deliveredOrder(
             @PathVariable Long id,
@@ -134,20 +164,17 @@ public class DistributorController {
         Optional<User> optionalUser = userRepository.findByEmail(authUser.getUsername());
         User user = optionalUser.orElseThrow();
 
-        Optional<Order> optionalOrder = orderRepository.getOrderByOrderNoAndDistributor(id, user);
+        Optional<Order> optionalOrder = orderService.getOrderByOrderNoAndDistributor(id, user);
         Order order = optionalOrder.orElseThrow();
         boolean inTime = false;
         double weight = 0;
         try {
-            if (order.getStatus() == OrderStatus.IN_TRANSIT && (order.getDistributor() == user || isAdmin(user))) {
+            if (order.getStatus() == OrderStatus.IN_TRANSIT && (order.getDistributor() == user || adminService.isAdmin(user))) {
                 order.setStatus(OrderStatus.DELIVERED);
-                order.setUpdated(LocalDateTime.now());
-                orderRepository.save(order);
-                inTime = order.getDeliveryDate().isBefore(Instant.ofEpochMilli(order.getDueDate().getTime()).atZone(ZoneId.systemDefault()).toLocalDateTime());
+                orderService.updateOrder(order);
 
-                for (OrdersProducts op : order.getOrdersProducts()) {
-                    weight += op.getProduct().getWeight();
-                }
+                inTime = order.getDeliveryDate().isBefore(Instant.ofEpochMilli(order.getDueDate().getTime()).atZone(ZoneId.systemDefault()).toLocalDateTime());
+                weight = order.getOrdersProducts().stream().mapToDouble(op -> op.getProduct().getWeight()).sum();
             }
 
             if (order.getStatus() != OrderStatus.IN_TRANSIT) {
@@ -173,12 +200,5 @@ public class DistributorController {
         objectNode.put("error", HttpStatus.BAD_REQUEST.value());
         objectNode.put("message", message);
         return ResponseEntity.badRequest().body(objectNode);
-    }
-
-    private boolean isAdmin(User user) {
-        Optional<Role> optionalRole = roleRepository.findByName(UserRole.ROLE_ADMIN.toString());
-
-        // First check, if we are admin
-        return optionalRole.isPresent() && user.getRoles().contains(optionalRole.get());
     }
 }

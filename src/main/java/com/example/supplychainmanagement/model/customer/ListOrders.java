@@ -11,6 +11,4 @@ import java.util.List;
 public class ListOrders {
 
     List<?> orders;
-
-    int amount;
 }

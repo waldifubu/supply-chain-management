@@ -69,6 +69,13 @@ public class OrderService {
         );
     }
 
+    /**
+     * Create Order
+     *
+     * @param request json
+     * @param user    given user
+     * @return Order object
+     */
     public Order createOrder(CreateOrderRequest request, User user) {
         long orderNo = (long) (Math.random() * 1337);
         Order order = new Order(orderNo);
@@ -93,6 +100,13 @@ public class OrderService {
         return orderRepository.findAllByUserAndStatus(user, status);
     }
 
+    /**
+     * Close Order, if possible
+     *
+     * @param orderNo
+     * @param user
+     * @return
+     */
     public Order closeOrder(long orderNo, User user) {
         Optional<Role> optionalAdminRole = roleRepository.findByName(UserRole.ROLE_ADMIN.toString());
         Optional<Role> optionalEnterpriseRole = roleRepository.findByName(UserRole.ROLE_ENTERPRISE.toString());
@@ -113,5 +127,26 @@ public class OrderService {
         }
 
         return order;
+    }
+
+    public Optional<Order> getOrder(long id) {
+        return orderRepository.findOrderByOrderNo(id);
+    }
+
+    public Optional<Order> getOrder(long id, User user) {
+        return orderRepository.findOrderByOrderNoAndUser(id, user);
+    }
+
+    public List<Order> findOrderByStatus(OrderStatus status) {
+        return orderRepository.findOrderByStatus(status);
+    }
+
+    public Optional<Order> getOrderByOrderNoAndDistributor(long id, User user) {
+        return orderRepository.getOrderByOrderNoAndDistributor(id, user);
+    }
+
+    public void updateOrder(Order order) {
+        order.setUpdated(LocalDateTime.now());
+        orderRepository.save(order);
     }
 }

@@ -20,7 +20,7 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping("/users")
-    @Secured({"ROLE_CUSTOMER", "ROLE_ENTERPRISE"})
+//    @Secured({"ROLE_CUSTOMER", "ROLE_ENTERPRISE", "ROLE_ADMIN"})
     public ResponseEntity<List<UserDto>> getUsers() {
         try {
             List<UserDto> users = userService.findAllUsers();

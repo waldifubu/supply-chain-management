@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.ser.PropertyFilter;
 import com.fasterxml.jackson.databind.ser.PropertyWriter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 
+
+// NOT IN USE!!!
 public class CustomFilter extends SimpleBeanPropertyFilter implements PropertyFilter {
 
     private boolean isSerializable;

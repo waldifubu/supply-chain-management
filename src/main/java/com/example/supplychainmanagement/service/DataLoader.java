@@ -18,7 +18,7 @@ public class DataLoader implements ApplicationRunner {
 
     //method invoked during the startup
     public void run(ApplicationArguments args) {
-        System.out.println("HALLO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11");
+        System.out.println("Runs after application start");
         /*
         roleRepository.save(new Role("ROLE_CUSTOMER"));
         roleRepository.save(new Role("ROLE_ENTERPRISE"));

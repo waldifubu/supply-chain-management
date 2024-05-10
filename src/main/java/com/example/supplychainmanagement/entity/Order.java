@@ -57,10 +57,12 @@ public class Order {
     @JoinColumn(name = "customer_id")
     private User user;
 
+
     @JsonSerialize(using = LocalDateTimeSerializer.class)
     @Temporal(TemporalType.TIMESTAMP)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updated;
+
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -75,6 +77,8 @@ public class Order {
 //        return countProducts;
 //    }
 
+
+    // @todo: replace with lombok
     public void setCountProducts(int countProducts) {
         this.countProducts = countProducts;
     }
@@ -99,8 +103,6 @@ public class Order {
         this.deliveryDate = deliveryDate;
         this.ordersProducts = ordersProducts;
     }
-
-    //o.id, o.orderNo, o.orderDate, o.status, o.dueDate, o.updated, o.deliveryDate, o.ordersProducts
 
     public Order(long orderNo) {
         this.orderNo = orderNo;

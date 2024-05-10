@@ -131,7 +131,7 @@ public class EnterpriseController {
                 .toList();
 
         try {
-            ListOrders listOrders = new ListOrders(orderList, orderList.size());
+            ListOrders listOrders = new ListOrders(orderList);
             return new ResponseEntity<>(listOrders, HttpStatus.OK);
         } catch (Exception e) {
             System.out.println(e.getMessage());
@@ -181,7 +181,7 @@ public class EnterpriseController {
         boolean isAdmin = false;
         // First check, if we are admin
         if (optionalRole.isPresent() && user.getRoles().contains(optionalRole.get())) {
-            optionalStorage = storageRepository.findByProductAdmin(product);
+            optionalStorage = storageRepository.findByProductFullStorage(product);
             List<Component> componentList = componentRepository.findAllByProduct(product);
             product.setComponentList(componentList);
             isAdmin = true;
@@ -273,7 +273,7 @@ public class EnterpriseController {
 
         Product product = requestComponent.getComponent().getProduct();
 
-        Optional<Storage> optionalStorage = storageRepository.findByProductAdmin(product);
+        Optional<Storage> optionalStorage = storageRepository.findByProductFullStorage(product);
         Storage storage = optionalStorage.orElseThrow();
         storage.setStorageStatus(StorageStatus.REQUESTED);
         storageRepository.save(storage);

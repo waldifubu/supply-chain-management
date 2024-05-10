@@ -1,6 +1,7 @@
 package com.example.supplychainmanagement.entity.users;
 
 import com.example.supplychainmanagement.entity.Role;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
@@ -9,6 +10,7 @@ import lombok.*;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
@@ -41,8 +43,10 @@ public class User implements Serializable {
     private String password;
 
     @Column(name="user_type", insertable = false, updatable = false)
-    protected String userType;
+    private String userType;
 
+    @JsonFormat(pattern = "dd.MM.yyyy HH:mm:ss")
+    private LocalDateTime lastLogin;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(

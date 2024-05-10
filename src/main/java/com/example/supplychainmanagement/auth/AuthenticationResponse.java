@@ -14,4 +14,6 @@ public class AuthenticationResponse {
     private String token;
 
     private String expirationTime;
+
+    private String username;
 }

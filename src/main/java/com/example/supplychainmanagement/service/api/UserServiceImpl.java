@@ -102,7 +102,7 @@ public class UserServiceImpl implements UserService {
         userDto.setLastName(name[1]);
         userDto.setEmail(user.getEmail());
         userDto.setId(user.getId());
-        userDto.setRole(UserRole.valueOf(user.getRoles().get(0).getName()));
+        userDto.setRole(UserRole.valueOf(user.getRoles().getFirst().getName()));
         return userDto;
     }
 

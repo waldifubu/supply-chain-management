@@ -14,5 +14,5 @@ public interface StorageRepository extends JpaRepository<Storage, Long> {
     Optional<Storage> findByProduct(Product product);
 
     @Query("select s from Storage s where s.product = ?1")
-    Optional<Storage> findByProductAdmin(Product product);
+    Optional<Storage> findByProductFullStorage(Product product);
 }

@@ -3,8 +3,10 @@ package com.example.supplychainmanagement.controller;
 import com.example.supplychainmanagement.auth.AuthenticationRequest;
 import com.example.supplychainmanagement.auth.AuthenticationResponse;
 import com.example.supplychainmanagement.auth.RegisterRequest;
+import com.example.supplychainmanagement.event.UserLoginEvent;
 import com.example.supplychainmanagement.service.api.ApiAuthenticationService;
 import io.jsonwebtoken.ExpiredJwtException;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,10 +14,14 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/auth")
 public class AuthApiController {
+
     private final ApiAuthenticationService apiAuthenticationService;
 
-    public AuthApiController(ApiAuthenticationService apiAuthenticationService) {
+    private final ApplicationEventPublisher eventPublisher;
+
+    public AuthApiController(ApiAuthenticationService apiAuthenticationService, ApplicationEventPublisher eventPublisher) {
         this.apiAuthenticationService = apiAuthenticationService;
+        this.eventPublisher = eventPublisher;
     }
 
     @PostMapping("/register")
@@ -31,11 +37,14 @@ public class AuthApiController {
     public ResponseEntity<AuthenticationResponse> authenticate(@RequestBody AuthenticationRequest request) {
         try {
             AuthenticationResponse response = apiAuthenticationService.authenticate(request);
+            eventPublisher.publishEvent(new UserLoginEvent(response.getUsername()));
             return ResponseEntity.ok(response);
         } catch (ExpiredJwtException bce) {
-            //throw new Exception("Incorrect username or password", e);
             AuthenticationResponse exp = AuthenticationResponse.builder().token("Token expired").build();
             return ResponseEntity.ok(exp);
+        } catch (Exception ex) {
+            AuthenticationResponse authenticationResponse = AuthenticationResponse.builder().token(ex.getMessage()).build();
+            return ResponseEntity.ok(authenticationResponse);
         }
     }
 }
