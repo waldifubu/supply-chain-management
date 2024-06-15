@@ -27,14 +27,10 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Query("select o from Order o where o.status = ?1")
     List<Order> findOrderByStatus(OrderStatus status);
 
-    @Query("select new Order(o.id, o.orderNo, o.orderDate, o.status, o.dueDate, o.updated, o.deliveryDate, o.ordersProducts) from Order o where o.status = ?1")
-    List<Order> findAllByOrderStatus(OrderStatus o);
 
     @Query("select o from Order o where o.status = ?1 and DATE(o.orderDate) = ?2")
     List<Order> findOrderByStatusAndOrderDate(OrderStatus status, Date date);
 
-    @Query("select new Order(o.id, o.orderNo, o.orderDate, o.status, o.dueDate, o.updated, o.deliveryDate, o.ordersProducts) from Order o where o.orderNo = ?1")
-    Optional<Order> getNewOrderByOrderNo(long id);
 
     Optional<Order> getOrderByOrderNo(long id);
 

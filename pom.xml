@@ -5,13 +5,13 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.2.5</version>
+        <version>3.3.0</version>
         <relativePath/> 
 	<!-- lookup parent from repository -->
     </parent>
     <groupId>com.example</groupId>
     <artifactId>supply-chain-management</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.1.1-SNAPSHOT</version>
     <name>Supply-chain-management</name>
     <description>Demo project SCM as a model</description>
     <properties>
@@ -25,13 +25,13 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
-            <version>3.2.5</version>
+            <version>3.3.0</version>
         </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
-            <version>3.2.5</version>
+            <version>3.3.0</version>
         </dependency>
 
         <!-- for nice ui -->
@@ -137,7 +137,7 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
-            <version>3.2.5</version>
+            <version>3.3.0</version>
         </dependency>
 
         <!-- StringUtils -->

@@ -71,7 +71,7 @@ public class SpringSecurity {
     public SecurityFilterChain securityFilterChainApi(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(request -> request.requestMatchers(new AntPathRequestMatcher("/api/stats"))
+                .authorizeHttpRequests(request -> request.requestMatchers(new AntPathRequestMatcher("/api/public/**"))
                         .permitAll())
                 .securityMatcher("/api/**")
                 .authorizeHttpRequests(authorize -> authorize

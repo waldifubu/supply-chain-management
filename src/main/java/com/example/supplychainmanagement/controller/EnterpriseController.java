@@ -97,7 +97,7 @@ public class EnterpriseController {
         OrderStatus orderStatus;
         try {
             orderStatus = OrderStatus.valueOf(requestStatus);
-        } catch (IllegalArgumentException iae) {
+        } catch (IllegalArgumentException | NullPointerException iae) {
             return handleWrongData("Data is wrong: " + requestStatus);
         }
 
